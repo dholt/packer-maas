@@ -1,0 +1,42 @@
+{
+    "variables":
+        {
+            "dgxos5_iso": "/work/DGXOS-5.0.0-2020-10-01-18-07-44.iso",
+            "dgxos5_sha256sum": "6e5c7ba2024640b3f23ec8681c15c8ccf8997a23da91c7e9d4eacf73bb564bee"
+        },
+    "builders": [
+        {
+            "type": "qemu",
+            "communicator": "none",
+            "iso_url": "file:{{user `dgxos5_iso`}}",
+            "iso_checksum": "sha256:{{user `dgxos5_sha256sum`}}",
+            "boot_command": [
+                "<down><e><down><down><down><left> ",
+                "G_FORCE_PLATFORM=dgx1 ",
+                "G_FORCE_BOOTDISK=vda ",
+                "G_NO_MLNX_FW_UPDATE=true",
+                "<f10>"
+            ],
+            "boot_wait": "3s",
+            "disk_size": "9G",
+            "headless": true,
+            "memory": 2048,
+            "http_directory": "http",
+            "qemuargs": [
+                [ "-serial", "stdio" ]
+            ],
+            "shutdown_timeout": "45m"
+        }
+    ],
+    "post-processors": [
+        {
+            "type": "shell-local",
+            "inline_shebang": "/bin/bash -e",
+            "inline": [
+                "source ../scripts/setup-nbd",
+                "TGZ_NAME='dgxos5.tar.gz'",
+                "source ../scripts/tar-root"
+            ]
+        }
+    ]
+}
