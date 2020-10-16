@@ -7,15 +7,17 @@
     "builders": [
         {
             "type": "qemu",
-            "communicator": "none",
+            "communicator": "ssh",
+            "ssh_username": "root",
+            "ssh_timeout": "10m",
             "iso_url": "file:{{user `dgxos5_iso`}}",
             "iso_checksum": "sha256:{{user `dgxos5_sha256sum`}}",
             "boot_command": [
                 "<down>e<down><down><end> ",
-                "G_OFFWHENDONE=true ",
-                "G_FORCE_PLATFORM=dgx1 ",
-                "G_FORCE_BOOTDISK=vda ",
-                "G_NO_MLNX_FW_UPDATE=true ",
+                "offwhendone ",
+                "force-platform=dgx1 ",
+                "force-bootdisk=vda ",
+                "no-mlnx-fw-update ",
                 "<f10>"
             ],
             "boot_wait": "3s",
