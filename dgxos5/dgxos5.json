@@ -9,7 +9,7 @@
             "type": "qemu",
             "communicator": "ssh",
             "ssh_username": "root",
-            "ssh_timeout": "10m",
+            "ssh_timeout": "20m",
             "iso_url": "file:{{user `dgxos5_iso`}}",
             "iso_checksum": "sha256:{{user `dgxos5_sha256sum`}}",
             "boot_command": [
@@ -18,8 +18,10 @@
                 "force-platform=dgx1 ",
                 "force-bootdisk=vda ",
                 "no-mlnx-fw-update ",
+                "force-curtin=http://{{ .HTTPIP }}:{{ .HTTPPort }}/curtin.yaml ",
                 "<f10>"
             ],
+            "http_directory": "http",
             "boot_wait": "3s",
             "disk_size": "9G",
             "headless": true,
