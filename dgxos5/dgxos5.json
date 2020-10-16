@@ -11,17 +11,18 @@
             "iso_url": "file:{{user `dgxos5_iso`}}",
             "iso_checksum": "sha256:{{user `dgxos5_sha256sum`}}",
             "boot_command": [
-                "<down><e><down><down><down><left> ",
+                "<down>e<down><down><end> ",
+                "G_OFFWHENDONE=true ",
                 "G_FORCE_PLATFORM=dgx1 ",
                 "G_FORCE_BOOTDISK=vda ",
-                "G_NO_MLNX_FW_UPDATE=true",
+                "G_NO_MLNX_FW_UPDATE=true ",
                 "<f10>"
             ],
             "boot_wait": "3s",
             "disk_size": "9G",
             "headless": true,
+            "vnc_bind_address": "0.0.0.0",
             "memory": 2048,
-            "http_directory": "http",
             "qemuargs": [
                 [ "-serial", "stdio" ]
             ],
