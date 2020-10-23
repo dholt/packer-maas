@@ -14,6 +14,8 @@
             "iso_checksum": "sha256:{{user `dgxos5_sha256sum`}}",
             "boot_command": [
                 "<down>e<down><down><end> ",
+                "force-curtin=http://{{ .HTTPIP }}:{{ .HTTPPort }}/curtin.yaml ",
+                "force-platform=dgx1 ",
                 "offwhendone ",
                 "force-bootdisk=vda ",
                 "no-mlnx-fw-update ",
