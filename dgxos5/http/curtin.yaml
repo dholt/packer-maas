@@ -41,8 +41,13 @@ early_commands:
   10_stop_ssh: ["systemctl", "stop", "ssh"]
 
 late_commands:
+  # SSH is configured differently in the cloud images so reconfigure it here to get back
+  # to the default settings
+  10_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "dpkg-reconfigure openssh-server"]
+  11_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"]
+
   # prevent services from starting automatically when installing
-  10_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "echo -e '#!/bin/sh\nexit 101' | install -m 755 /dev/stdin /usr/sbin/policy-rc.d"]
+  12_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "echo -e '#!/bin/sh\nexit 101' | install -m 755 /dev/stdin /usr/sbin/policy-rc.d"]
 
   23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt update -y"]
   #24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends CHANGE_INSTALL_PKGS"]
@@ -68,12 +73,10 @@ late_commands:
   80_mkdir_installer_logs: mkdir -p $TARGET_MOUNT_POINT/var/log/installer
   81_copy_logs: cp -rf /var/log/* $TARGET_MOUNT_POINT/var/log/installer/
 
+  # remove file which prevents services from starting automatically when installing
   82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
 
-  # SSH is configured differently in the cloud images so reconfigure it here to get back
-  # to the default settings
-  90_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "dpkg-reconfigure openssh-server"]
-  91_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"]
-
   # Enable SSH last when using Packer
+  90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
+  91_conf_ssh: ["sed", "-i", "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/", "/etc/ssh/sshd_config"]
   92_start_ssh: ["systemctl", "start", "ssh"]
