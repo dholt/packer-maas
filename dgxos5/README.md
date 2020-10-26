@@ -112,6 +112,12 @@ qemu-img convert -O qcow2 output-qemu/packer-qemu output-qemu/packer-qemu.conver
 # tmp stuff
 "force-curtin=http://{{ .HTTPIP }}:{{ .HTTPPort }}/curtin.yaml ",
 "force-platform=dgx-vbox ",
+            # regular dgx os 5 image:
+            "dgxos5_iso": "/scratch/DGXOS-5.0.0-2020-10-01-18-07-44.iso",
+            "dgxos5_sha256sum": "6e5c7ba2024640b3f23ec8681c15c8ccf8997a23da91c7e9d4eacf73bb564bee"
+            # egx test image: ( has different grub menu entries)
+            "dgxos5_iso": "/scratch/egxtest-5.0.0-2020-10-23-14-40-24.iso",
+            "dgxos5_sha256sum": "d7de20b8922fc7c3cf319afebe1a1b51a96f6af3989f12149445831e39098649"
 
 # foo
 using preseed, get on console, stop sshd service, run: dhclient ens3
