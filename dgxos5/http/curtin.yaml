@@ -36,15 +36,13 @@ reporting:
     identifier: "curtin-journald"
     level: DEBUG
 
-#early_commands:
-  # stop networking so Packer can't connect yet
-  10_stop_network: systemctl stop systemd-networkd
+early_commands:
+  # stop the SSH server daemon so Packer can't connect yet
+  10_stop_ssh: ["systemctl", "stop", "ssh"]
 
 late_commands:
-  # prevent ssh server daemon from starting automaticall when installing
+  # prevent services from starting automatically when installing
   10_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "echo -e '#!/bin/sh\nexit 101' | install -m 755 /dev/stdin /usr/sbin/policy-rc.d"]
-  11_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "systemctl stop sshd"]
-  11_start_network: systemctl start systemd-networkd
 
   23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt update -y"]
   #24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends CHANGE_INSTALL_PKGS"]
@@ -72,9 +70,10 @@ late_commands:
 
   82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
 
-  # Enable SSH last when using Packer
   # SSH is configured differently in the cloud images so reconfigure it here to get back
   # to the default settings
   90_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "dpkg-reconfigure openssh-server"]
   91_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"]
 
+  # Enable SSH last when using Packer
+  92_start_ssh: ["systemctl", "start", "ssh"]
