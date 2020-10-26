@@ -22,56 +22,8 @@ install:
 kernel:
   package: linux-generic
 
-storage:
-  version: 1
-  config:
-  - id: CHANGE_BOOT_DISK_NAME_1
-    type: disk
-    ptable: gpt
-    path: CHANGE_BOOT_DISK_PATH_1
-    name: osdisk
-    wipe: superblock-recursive
-    grub_device: 1
-  - id: CHANGE_BOOT_DISK_NAME_1-part1
-    type: partition
-    device: CHANGE_BOOT_DISK_NAME_1
-    number: 1
-    size: 512MB
-    flag: boot
-  - id: CHANGE_BOOT_DISK_NAME_1-part2
-    type: partition
-    device: CHANGE_BOOT_DISK_NAME_1
-    number: 2
-    size: CHANGE_BOOT_DISK_SIZE_1
-  - id: CHANGE_BOOT_DISK_NAME_1-part1-fs1
-    type: format
-    fstype: fat32
-    label: efi
-    volume: CHANGE_BOOT_DISK_NAME_1-part1
-  - id: CHANGE_BOOT_DISK_NAME_1-part2-fs1
-    type: format
-    fstype: ext4
-    label: root
-    volume: CHANGE_BOOT_DISK_NAME_1-part2
-  - id: CHANGE_BOOT_DISK_NAME_1-mount2
-    type: mount
-    path: /
-    device: CHANGE_BOOT_DISK_NAME_1-part2-fs1
-    options: errors=remount-ro
-    passno: 1
-  - id: boot-mount1
-    type: mount
-    path: /boot/efi
-    device: CHANGE_BOOT_DISK_NAME_1-part1-fs1
-    passno: 1
-
 swap:
   size: 0
-
-power_state:
-  mode: CHANGE_POWER_STATE
-  delay: 5
-  message: Installation Complete
 
 sources:
   05_primary:
@@ -85,14 +37,14 @@ reporting:
     level: DEBUG
 
 #early_commands:
-#  90_mount_curtin: mount -o bind /curtin/repo/ /var/www/html/
-#  91_chown_www: chown www-data:www-data /curtin/repo /var/www/html
+  # stop networking so Packer can't connect yet
+  10_stop_network: systemctl stop systemd-networkd
 
 late_commands:
-  # SSH is configured differently in the cloud images so reconfigure it here to get back
-  # to the default settings
-  10_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "dpkg-reconfigure openssh-server"]
-  11_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"]
+  # prevent ssh server daemon from starting automaticall when installing
+  10_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "echo -e '#!/bin/sh\nexit 101' | install -m 755 /dev/stdin /usr/sbin/policy-rc.d"]
+  11_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "systemctl stop sshd"]
+  11_start_network: systemctl start systemd-networkd
 
   23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt update -y"]
   #24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends CHANGE_INSTALL_PKGS"]
@@ -115,5 +67,14 @@ late_commands:
     "echo 'lab:labuser' | chpasswd"]
 
   # Copy logs from the install environment into the target
-  90_mkdir_installer_logs: mkdir -p $TARGET_MOUNT_POINT/var/log/installer
-  91_copy_logs: cp -rf /var/log/* $TARGET_MOUNT_POINT/var/log/installer/
+  80_mkdir_installer_logs: mkdir -p $TARGET_MOUNT_POINT/var/log/installer
+  81_copy_logs: cp -rf /var/log/* $TARGET_MOUNT_POINT/var/log/installer/
+
+  82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
+
+  # Enable SSH last when using Packer
+  # SSH is configured differently in the cloud images so reconfigure it here to get back
+  # to the default settings
+  90_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "dpkg-reconfigure openssh-server"]
+  91_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"]
+

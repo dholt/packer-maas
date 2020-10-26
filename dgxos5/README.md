@@ -112,6 +112,10 @@ qemu-img convert -O qcow2 output-qemu/packer-qemu output-qemu/packer-qemu.conver
 # tmp stuff
 "force-curtin=http://{{ .HTTPIP }}:{{ .HTTPPort }}/curtin.yaml ",
 "force-platform=dgx-vbox ",
+                "offwhendone ",
+            # newer dgx os 5 image:
+            "dgxos5_iso": "/scratch/DGXOS-5.0.0-2020-10-23-18-34-11.iso",
+            "dgxos5_sha256sum": "2eefe51fea356642cbe087db6bac802179db6290db2fc192e81a4ed67b5ee30b"
             # regular dgx os 5 image:
             "dgxos5_iso": "/scratch/DGXOS-5.0.0-2020-10-01-18-07-44.iso",
             "dgxos5_sha256sum": "6e5c7ba2024640b3f23ec8681c15c8ccf8997a23da91c7e9d4eacf73bb564bee"

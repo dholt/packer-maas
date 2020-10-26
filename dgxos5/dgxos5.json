@@ -1,23 +1,26 @@
 {
     "variables":
         {
-            "dgxos5_iso": "/scratch/DGXOS-5.0.0-2020-10-01-18-07-44.iso",
-            "dgxos5_sha256sum": "6e5c7ba2024640b3f23ec8681c15c8ccf8997a23da91c7e9d4eacf73bb564bee"
+            "dgxos5_iso": "/scratch/DGXOS-5.0.0-2020-10-23-18-34-11.iso",
+            "dgxos5_sha256sum": "2eefe51fea356642cbe087db6bac802179db6290db2fc192e81a4ed67b5ee30b"
         },
     "builders": [
         {
             "type": "qemu",
             "communicator": "ssh",
-            "ssh_username": "root",
+            "pause_before_connecting": "10m",
+            "ssh_username": "lab",
+            "ssh_password": "labuser",
             "ssh_timeout": "90m",
             "iso_url": "file:{{user `dgxos5_iso`}}",
             "iso_checksum": "sha256:{{user `dgxos5_sha256sum`}}",
             "boot_command": [
                 "<down>e<down><down><end> ",
+                "force-curtin=http://{{ .HTTPIP }}:{{ .HTTPPort }}/curtin.yaml ",
                 "force-platform=dgx1 ",
-                "offwhendone ",
                 "force-bootdisk=vda ",
                 "no-mlnx-fw-update ",
+                "start-systemd-networkd",
                 "<f10>"
             ],
             "http_directory": "http",
