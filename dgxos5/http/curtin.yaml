@@ -36,9 +36,14 @@ reporting:
     identifier: "curtin-journald"
     level: DEBUG
 
+#stages: ["early", "late"]
+
 early_commands:
   # stop the SSH server daemon so Packer can't connect yet
   10_stop_ssh: ["systemctl", "stop", "ssh"]
+  20_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
+  21_conf_ssh: ["sed", "-i", "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/", "/etc/ssh/sshd_config"]
+  30_set_root_pw: ["sh", "-c", "echo root:root | chpasswd"]
 
 late_commands:
   # SSH is configured differently in the cloud images so reconfigure it here to get back
@@ -49,9 +54,9 @@ late_commands:
   # prevent services from starting automatically when installing
   12_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "echo -e '#!/bin/sh\nexit 101' | install -m 755 /dev/stdin /usr/sbin/policy-rc.d"]
 
-  23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt update -y"]
-  #24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends CHANGE_INSTALL_PKGS"]
-  #25_unattended_upgrades: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt purge -y unattended-upgrades"]
+  23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -y"]
+  #24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends CHANGE_INSTALL_PKGS"]
+  #25_unattended_upgrades: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get purge -y unattended-upgrades"]
 
   # Rewrite sources list
   30_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse > /etc/apt/sources.list"]
@@ -77,6 +82,8 @@ late_commands:
   82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
 
   # Enable SSH last when using Packer
-  90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
-  91_conf_ssh: ["sed", "-i", "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/", "/etc/ssh/sshd_config"]
   92_start_ssh: ["systemctl", "start", "ssh"]
+
+  # Sleep just in case so Packer has a chance to shut down the machine vs the init script ending
+  # This won't actually run for 600 seconds
+  93_sleep: ["sleep", "600"]

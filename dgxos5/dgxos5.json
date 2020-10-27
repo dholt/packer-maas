@@ -8,8 +8,8 @@
         {
             "type": "qemu",
             "communicator": "ssh",
-            "pause_before_connecting": "10m",
             "ssh_username": "root",
+            "ssh_password": "root",
             "ssh_timeout": "90m",
             "iso_url": "file:{{user `dgxos5_iso`}}",
             "iso_checksum": "sha256:{{user `dgxos5_sha256sum`}}",
@@ -29,10 +29,8 @@
             "vnc_bind_address": "0.0.0.0",
             "memory": 2048,
             "qemuargs": [
-                [ "-serial", "stdio" ],
-                [ "-smbios", "type=0,uefi=on" ]
-            ],
-            "shutdown_timeout": "45m"
+                [ "-serial", "stdio" ]
+            ]
         }
     ],
     "post-processors": [

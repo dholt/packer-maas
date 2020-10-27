@@ -92,6 +92,9 @@ sudo PACKER_LOG=1 packer build dgxos5.json
 # optionally, instead of modifying config file:
 sudo PACKER_LOG=1 packer build -var 'dgxos5_iso=/path/to/dgx_iso' -var 'dgxos5_sha256sum=<dgx_os_iso_sha256_sum>' dgxos5.json
 
+# Add image to MAAS:
+maas $PROFILE boot-resources create name='ubuntu/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
+
 ## debug stuff
 # to manually test qemu steps for debug purposes:
 mkdir ~/output-qemu
@@ -123,6 +126,10 @@ qemu-img convert -O qcow2 output-qemu/packer-qemu output-qemu/packer-qemu.conver
             "dgxos5_iso": "/scratch/egxtest-5.0.0-2020-10-23-14-40-24.iso",
             "dgxos5_sha256sum": "d7de20b8922fc7c3cf319afebe1a1b51a96f6af3989f12149445831e39098649"
 
+            "qemuargs": [
+                [ "-serial", "stdio" ],
+                [ "-smbios", "type=0,uefi=on" ]
+            ]
 # foo
 using preseed, get on console, stop sshd service, run: dhclient ens3
 ```
