@@ -22,6 +22,50 @@ install:
 kernel:
   package: linux-generic
 
+storage:
+  version: 1
+  config:
+#
+# Enable this block for regular disk partitioning scheme
+#
+CHANGE_STORAGE_REG  - id: CHANGE_BOOT_DISK_NAME_1
+CHANGE_STORAGE_REG    type: disk
+CHANGE_STORAGE_REG    ptable: gpt
+CHANGE_STORAGE_REG    path: CHANGE_BOOT_DISK_PATH_1
+CHANGE_STORAGE_REG    name: osdisk
+CHANGE_STORAGE_REG    wipe: superblock-recursive
+CHANGE_STORAGE_REG  - id: CHANGE_BOOT_DISK_NAME_1-part1
+CHANGE_STORAGE_REG    type: partition
+CHANGE_STORAGE_REG    device: CHANGE_BOOT_DISK_NAME_1
+CHANGE_STORAGE_REG    number: 1
+CHANGE_STORAGE_REG    size: 512MB
+CHANGE_STORAGE_REG  - id: CHANGE_BOOT_DISK_NAME_1-part2
+CHANGE_STORAGE_REG    type: partition
+CHANGE_STORAGE_REG    device: CHANGE_BOOT_DISK_NAME_1
+CHANGE_STORAGE_REG    number: 2
+CHANGE_STORAGE_REG    size: CHANGE_BOOT_DISK_SIZE_1
+CHANGE_STORAGE_REG  - id: CHANGE_BOOT_DISK_NAME_1-part1-fs1
+CHANGE_STORAGE_REG    type: format
+CHANGE_STORAGE_REG    fstype: fat32
+CHANGE_STORAGE_REG    label: efi
+CHANGE_STORAGE_REG    volume: CHANGE_BOOT_DISK_NAME_1-part1
+CHANGE_STORAGE_REG  - id: CHANGE_BOOT_DISK_NAME_1-part2-fs1
+CHANGE_STORAGE_REG    type: format
+CHANGE_STORAGE_REG    fstype: ext4
+CHANGE_STORAGE_REG    label: root
+CHANGE_STORAGE_REG    volume: CHANGE_BOOT_DISK_NAME_1-part2
+CHANGE_STORAGE_REG  - id: CHANGE_BOOT_DISK_NAME_1-mount2
+CHANGE_STORAGE_REG    type: mount
+CHANGE_STORAGE_REG    path: /
+CHANGE_STORAGE_REG    device: CHANGE_BOOT_DISK_NAME_1-part2-fs1
+CHANGE_STORAGE_REG    options: errors=remount-ro
+CHANGE_STORAGE_REG    passno: 1
+CHANGE_STORAGE_REG  - id: boot-mount1
+CHANGE_STORAGE_REG    type: mount
+CHANGE_STORAGE_REG    path: /boot/efi
+CHANGE_STORAGE_REG    device: CHANGE_BOOT_DISK_NAME_1-part1-fs1
+CHANGE_STORAGE_REG    passno: 1
+
 swap:
   size: 0
 
@@ -36,14 +80,12 @@ reporting:
     identifier: "curtin-journald"
     level: DEBUG
 
+# Running just a couple stages is useful for debugging
 #stages: ["early", "late"]
 
 early_commands:
   # stop the SSH server daemon so Packer can't connect yet
   10_stop_ssh: ["systemctl", "stop", "ssh"]
-  20_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
-  21_conf_ssh: ["sed", "-i", "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/", "/etc/ssh/sshd_config"]
-  30_set_root_pw: ["sh", "-c", "echo root:root | chpasswd"]
 
 late_commands:
   # SSH is configured differently in the cloud images so reconfigure it here to get back
@@ -82,8 +124,11 @@ late_commands:
   82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
 
   # Enable SSH last when using Packer
-  92_start_ssh: ["systemctl", "start", "ssh"]
+  90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
+  91_conf_ssh: ["sed", "-i", "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/", "/etc/ssh/sshd_config"]
+  92_set_root_pw: ["sh", "-c", "echo root:root | chpasswd"]
+  93_start_ssh: ["systemctl", "start", "ssh"]
 
   # Sleep just in case so Packer has a chance to shut down the machine vs the init script ending
   # This won't actually run for 600 seconds
-  93_sleep: ["sleep", "600"]
+  94_sleep: ["sleep", "600"]
