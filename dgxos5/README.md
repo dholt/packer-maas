@@ -132,4 +132,7 @@ qemu-img convert -O qcow2 output-qemu/packer-qemu output-qemu/packer-qemu.conver
             ]
 # foo
 using preseed, get on console, stop sshd service, run: dhclient ens3
+
+# sometimes nbd devices don't get unmonted
+# as root: unmount /dev/nbd*
 ```
