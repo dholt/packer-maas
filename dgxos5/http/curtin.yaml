@@ -119,6 +119,7 @@ late_commands:
 
   # remove file which prevents services from starting automatically when installing
   82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
+  83_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /etc/default/grub.d/50-curtin-settings.cfg"]
 
   # Enable SSH last when using Packer
   90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
