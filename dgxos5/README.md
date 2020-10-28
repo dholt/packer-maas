@@ -135,7 +135,8 @@ qemu-img convert -O qcow2 output-qemu/packer-qemu output-qemu/packer-qemu.conver
 
             "qemuargs": [
                 [ "-serial", "stdio" ],
-                [ "-smbios", "type=0,uefi=on" ]
+                [ "-smbios", "type=0,uefi=on" ],
+                [ "-smp", "8"]
             ]
 # foo
 using preseed, get on console, stop sshd service, run: dhclient ens3

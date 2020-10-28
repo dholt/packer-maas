@@ -19,53 +19,6 @@ install:
   save_install_log: /var/log/curtin-install.log
   umount: disabled
 
-kernel:
-  package: linux-generic
-
-  #storage:
-  #  version: 1
-  #  config:
-  #    - id: CHANGE_BOOT_DISK_NAME_1
-  #      type: disk
-  #      ptable: msdos
-  #      path: CHANGE_BOOT_DISK_PATH_1
-  #      name: osdisk
-  #      wipe: superblock-recursive
-  #    - id: CHANGE_BOOT_DISK_NAME_1-part1
-  #      type: partition
-  #      device: CHANGE_BOOT_DISK_NAME_1
-  #      number: 1
-  #      size: 512MB
-  #    - id: CHANGE_BOOT_DISK_NAME_1-part2
-  #      type: partition
-  #      device: CHANGE_BOOT_DISK_NAME_1
-  #      number: 2
-  #      size: CHANGE_BOOT_DISK_SIZE_1
-  #    - id: CHANGE_BOOT_DISK_NAME_1-part1-fs1
-  #      type: format
-  #      fstype: fat32
-  #      label: efi
-  #      volume: CHANGE_BOOT_DISK_NAME_1-part1
-  #    - id: CHANGE_BOOT_DISK_NAME_1-part2-fs1
-  #      type: format
-  #      fstype: ext4
-  #      label: root
-  #      volume: CHANGE_BOOT_DISK_NAME_1-part2
-  #    - id: CHANGE_BOOT_DISK_NAME_1-mount2
-  #      type: mount
-  #      path: /
-  #      device: CHANGE_BOOT_DISK_NAME_1-part2-fs1
-  #      options: errors=remount-ro
-  #      passno: 1
-  #    - id: boot-mount1
-  #      type: mount
-  #      path: /boot/efi
-  #      device: CHANGE_BOOT_DISK_NAME_1-part1-fs1
-  #      passno: 1
-
-swap:
-  size: 0
-
 sources:
   05_primary:
     uri: "file:///curtin/ubuntu-20.04-server-cloudimg-amd64-root.tar.xz"
@@ -77,8 +30,7 @@ reporting:
     identifier: "curtin-journald"
     level: DEBUG
 
-# Running just a couple stages is useful for debugging
-#stages: ["early", "late"]
+# Run a limited set of stages since we don't need a full install
 stages: ["early", "partitioning", "network", "extract", "late"]
 
 early_commands:
@@ -86,13 +38,8 @@ early_commands:
   10_stop_ssh: ["systemctl", "stop", "ssh"]
 
 late_commands:
-  # SSH is configured differently in the cloud images so reconfigure it here to get back
-  # to the default settings
-  10_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "dpkg-reconfigure openssh-server"]
-  11_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"]
-
   # prevent services from starting automatically when installing
-  12_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "echo -e '#!/bin/sh\nexit 101' | install -m 755 /dev/stdin /usr/sbin/policy-rc.d"]
+  #12_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "echo -e '#!/bin/sh\nexit 101' | install -m 755 /dev/stdin /usr/sbin/policy-rc.d"]
 
   23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -y"]
   #24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends CHANGE_INSTALL_PKGS"]
@@ -107,23 +54,23 @@ late_commands:
   40_disable_upgrade: ["curtin", "in-target", "--", "sh", "-c", "sed -i -e 's/^Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades"]
 
   # Create user
-  50_create_user: ["curtin", "in-target", "--", "sh", "-c",
-    "adduser --disabled-password --gecos \"\" --quiet lab"]
-  51_add_user_group: ["curtin", "in-target", "--", "sh", "-c",
-    "usermod -aG sudo lab"]
-  52_set_user_password: ["curtin", "in-target", "--", "sh", "-c",
-    "echo 'lab:labuser' | chpasswd"]
+  #50_create_user: ["curtin", "in-target", "--", "sh", "-c",
+  #  "adduser --disabled-password --gecos \"\" --quiet lab"]
+  #51_add_user_group: ["curtin", "in-target", "--", "sh", "-c",
+  #  "usermod -aG sudo lab"]
+  #52_set_user_password: ["curtin", "in-target", "--", "sh", "-c",
+  #  "echo 'lab:labuser' | chpasswd"]
 
   # Copy logs from the install environment into the target
-  80_mkdir_installer_logs: mkdir -p $TARGET_MOUNT_POINT/var/log/installer
-  81_copy_logs: cp -rf /var/log/* $TARGET_MOUNT_POINT/var/log/installer/
+  #80_mkdir_installer_logs: mkdir -p $TARGET_MOUNT_POINT/var/log/installer
+  #81_copy_logs: cp -rf /var/log/* $TARGET_MOUNT_POINT/var/log/installer/
 
   # remove file which prevents services from starting automatically when installing
-  82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
+  #82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
   #83_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /etc/default/grub.d/50-curtin-settings.cfg"]
-  84_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get remove -y --autoremove --purge grub*"]
-  85_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -rf /boot/"]
-  86_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "mkdir -p /boot/"]
+  #84_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get remove -y --autoremove --purge grub*"]
+  #85_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -rf /boot/"]
+  #86_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "mkdir -p /boot/"]
 
   # Enable SSH last when using Packer
   90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]

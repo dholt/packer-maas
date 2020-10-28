@@ -29,9 +29,7 @@
             "vnc_bind_address": "0.0.0.0",
             "memory": 2048,
             "qemuargs": [
-                [ "-serial", "stdio" ],
-                [ "-smbios", "type=0,uefi=on" ],
-                [ "-smp", "8"]
+                [ "-serial", "stdio" ]
             ]
         }
     ],
