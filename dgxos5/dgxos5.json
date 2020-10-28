@@ -30,7 +30,8 @@
             "memory": 2048,
             "qemuargs": [
                 [ "-serial", "stdio" ],
-                [ "-smbios", "type=0,uefi=on" ]
+                [ "-smbios", "type=0,uefi=on" ],
+                [ "-smp", "8"]
             ]
         }
     ],

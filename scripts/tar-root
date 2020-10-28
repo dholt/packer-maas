@@ -27,7 +27,8 @@ fi
 TMP_DIR=$(mktemp -d /tmp/packer-maas-XXXX)
 
 echo 'Mounting root partition...'
-mount "${nbd}p1" $TMP_DIR
+#mount "${nbd}p1" $TMP_DIR
+mount "${nbd}p2" $TMP_DIR
 
 if [ -d curtin ] || [ -d "$CURTIN_HOOKS" ]; then
     echo 'Adding Curtin hooks...'

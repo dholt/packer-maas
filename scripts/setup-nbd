@@ -54,8 +54,7 @@ else
 fi
 echo 'Waiting for partitions to be created...'
 tries=0
-#while [ ! -e "${nbd}p1" -a $tries -lt 60 ]; do
-while [ ! -e "${nbd}-part2" -a $tries -lt 60 ]; do
+while [ ! -e "${nbd}p1" -a $tries -lt 60 ]; do
     sleep 1
     tries=$((tries+1))
 done
