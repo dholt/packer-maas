@@ -143,4 +143,7 @@ using preseed, get on console, stop sshd service, run: dhclient ens3
 
 # sometimes nbd devices don't get unmounted between builds with packer
 # so run as root: umount /dev/nbd*
+
+# between builds, remove artifacts
+sudo rm -rf output-qemu/ dgxos5.tar.gz
 ```

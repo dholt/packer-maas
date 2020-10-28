@@ -38,12 +38,9 @@ early_commands:
   10_stop_ssh: ["systemctl", "stop", "ssh"]
 
 late_commands:
-  # prevent services from starting automatically when installing
-  #12_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "echo -e '#!/bin/sh\nexit 101' | install -m 755 /dev/stdin /usr/sbin/policy-rc.d"]
-
   23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -y"]
-  #24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends CHANGE_INSTALL_PKGS"]
-  #25_unattended_upgrades: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get purge -y unattended-upgrades"]
+  24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends CHANGE_INSTALL_PKGS"]
+  25_unattended_upgrades: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get purge -y unattended-upgrades"]
 
   # Rewrite sources list
   30_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse > /etc/apt/sources.list"]
@@ -52,25 +49,6 @@ late_commands:
 
   # Disable release-upgrade prompt
   40_disable_upgrade: ["curtin", "in-target", "--", "sh", "-c", "sed -i -e 's/^Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades"]
-
-  # Create user
-  #50_create_user: ["curtin", "in-target", "--", "sh", "-c",
-  #  "adduser --disabled-password --gecos \"\" --quiet lab"]
-  #51_add_user_group: ["curtin", "in-target", "--", "sh", "-c",
-  #  "usermod -aG sudo lab"]
-  #52_set_user_password: ["curtin", "in-target", "--", "sh", "-c",
-  #  "echo 'lab:labuser' | chpasswd"]
-
-  # Copy logs from the install environment into the target
-  #80_mkdir_installer_logs: mkdir -p $TARGET_MOUNT_POINT/var/log/installer
-  #81_copy_logs: cp -rf /var/log/* $TARGET_MOUNT_POINT/var/log/installer/
-
-  # remove file which prevents services from starting automatically when installing
-  #82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
-  #83_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /etc/default/grub.d/50-curtin-settings.cfg"]
-  #84_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get remove -y --autoremove --purge grub*"]
-  #85_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -rf /boot/"]
-  #86_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "mkdir -p /boot/"]
 
   # Enable SSH last when using Packer
   90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
