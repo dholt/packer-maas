@@ -22,46 +22,46 @@ install:
 kernel:
   package: linux-generic
 
-storage:
-  version: 1
-  config:
-    - id: CHANGE_BOOT_DISK_NAME_1
-      type: disk
-      ptable: msdos
-      path: CHANGE_BOOT_DISK_PATH_1
-      name: osdisk
-      wipe: superblock-recursive
-    - id: CHANGE_BOOT_DISK_NAME_1-part1
-      type: partition
-      device: CHANGE_BOOT_DISK_NAME_1
-      number: 1
-      size: 512MB
-    - id: CHANGE_BOOT_DISK_NAME_1-part2
-      type: partition
-      device: CHANGE_BOOT_DISK_NAME_1
-      number: 2
-      size: CHANGE_BOOT_DISK_SIZE_1
-    - id: CHANGE_BOOT_DISK_NAME_1-part1-fs1
-      type: format
-      fstype: fat32
-      label: efi
-      volume: CHANGE_BOOT_DISK_NAME_1-part1
-    - id: CHANGE_BOOT_DISK_NAME_1-part2-fs1
-      type: format
-      fstype: ext4
-      label: root
-      volume: CHANGE_BOOT_DISK_NAME_1-part2
-    - id: CHANGE_BOOT_DISK_NAME_1-mount2
-      type: mount
-      path: /
-      device: CHANGE_BOOT_DISK_NAME_1-part2-fs1
-      options: errors=remount-ro
-      passno: 1
-    - id: boot-mount1
-      type: mount
-      path: /boot/efi
-      device: CHANGE_BOOT_DISK_NAME_1-part1-fs1
-      passno: 1
+  #storage:
+  #  version: 1
+  #  config:
+  #    - id: CHANGE_BOOT_DISK_NAME_1
+  #      type: disk
+  #      ptable: msdos
+  #      path: CHANGE_BOOT_DISK_PATH_1
+  #      name: osdisk
+  #      wipe: superblock-recursive
+  #    - id: CHANGE_BOOT_DISK_NAME_1-part1
+  #      type: partition
+  #      device: CHANGE_BOOT_DISK_NAME_1
+  #      number: 1
+  #      size: 512MB
+  #    - id: CHANGE_BOOT_DISK_NAME_1-part2
+  #      type: partition
+  #      device: CHANGE_BOOT_DISK_NAME_1
+  #      number: 2
+  #      size: CHANGE_BOOT_DISK_SIZE_1
+  #    - id: CHANGE_BOOT_DISK_NAME_1-part1-fs1
+  #      type: format
+  #      fstype: fat32
+  #      label: efi
+  #      volume: CHANGE_BOOT_DISK_NAME_1-part1
+  #    - id: CHANGE_BOOT_DISK_NAME_1-part2-fs1
+  #      type: format
+  #      fstype: ext4
+  #      label: root
+  #      volume: CHANGE_BOOT_DISK_NAME_1-part2
+  #    - id: CHANGE_BOOT_DISK_NAME_1-mount2
+  #      type: mount
+  #      path: /
+  #      device: CHANGE_BOOT_DISK_NAME_1-part2-fs1
+  #      options: errors=remount-ro
+  #      passno: 1
+  #    - id: boot-mount1
+  #      type: mount
+  #      path: /boot/efi
+  #      device: CHANGE_BOOT_DISK_NAME_1-part1-fs1
+  #      passno: 1
 
 swap:
   size: 0
@@ -79,6 +79,7 @@ reporting:
 
 # Running just a couple stages is useful for debugging
 #stages: ["early", "late"]
+stages: ["early", "partitioning", "network", "extract", "late"]
 
 early_commands:
   # stop the SSH server daemon so Packer can't connect yet
@@ -119,7 +120,10 @@ late_commands:
 
   # remove file which prevents services from starting automatically when installing
   82_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /usr/sbin/policy-rc.d"]
-  83_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /etc/default/grub.d/50-curtin-settings.cfg"]
+  #83_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -f /etc/default/grub.d/50-curtin-settings.cfg"]
+  84_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get remove -y --autoremove --purge grub*"]
+  85_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "rm -rf /boot/"]
+  86_do_stuff: ["curtin", "in-target", "--", "sh", "-c", "mkdir -p /boot/"]
 
   # Enable SSH last when using Packer
   90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]

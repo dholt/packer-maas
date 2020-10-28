@@ -95,6 +95,13 @@ sudo PACKER_LOG=1 packer build -var 'dgxos5_iso=/path/to/dgx_iso' -var 'dgxos5_s
 # Add image to MAAS:
 maas $PROFILE boot-resources create name='ubuntu/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
 
+# Boot machines in EFI mode
+# In maas, create and EFI partition in addition to other partitions, i.e:
+# NAME    SIZE     FILESYSTEM   MOUNT POINT
+sda-part1 511.7 MB fat32        /boot/efi
+sda-part2 63.9 GB  ext4         /
+##
+
 ## debug stuff
 # to manually test qemu steps for debug purposes:
 mkdir ~/output-qemu
@@ -133,6 +140,6 @@ qemu-img convert -O qcow2 output-qemu/packer-qemu output-qemu/packer-qemu.conver
 # foo
 using preseed, get on console, stop sshd service, run: dhclient ens3
 
-# sometimes nbd devices don't get unmonted
-# as root: umount /dev/nbd*
+# sometimes nbd devices don't get unmounted between builds with packer
+# so run as root: umount /dev/nbd*
 ```
