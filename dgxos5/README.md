@@ -63,6 +63,8 @@ sda-part2 63.9 GB  ext4         /
 
 TODO Next:
 * kernel parameters in MAAS (w/ tags)
+* add var for force-platform; generate one image per DGX type
+
 
 <!--
 
