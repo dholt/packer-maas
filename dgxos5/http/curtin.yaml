@@ -39,7 +39,7 @@ late_commands:
 
   # Disable release-upgrade prompt
   40_disable_upgrade: ["curtin", "in-target", "--", "sh", "-c", "sed -i -e 's/^Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades"]
- 
+
   # Enable SSH last when using Packer
   90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
   91_conf_ssh: ["sed", "-i", "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/", "/etc/ssh/sshd_config"]
