@@ -44,6 +44,8 @@ sudo packer build -var 'dgxos5_iso=/path/to/dgx_iso' -var 'dgxos5_sha256sum=<dgx
 # For more verbosity set `PACKER_LOG=1`, i.e sudo PACKER_LOG=1 build ...
 ```
 
+Come back in about 70 minutes...
+
 Add image to MAAS:
 
 ```sh
