@@ -1,4 +1,81 @@
+Install dependencies (Ubuntu 18.04)
 
+```sh
+sudo apt -y install qemu qemu-utils
+```
+
+Install Packer
+
+```sh
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update && sudo apt-get install packer
+```
+
+Go to Packer template directory for DGX OS 5, i.e
+
+```sh
+cd packer-maas/dgxos5
+```
+
+Download DGX OS somewhere (i.e. /work)
+
+Generate checksum of image
+
+```sh
+sha256sum /work/DGXOS-5.0.0-2020-10-01-18-07-44.iso
+```
+Build image
+
+```sh
+# When building the image, you can pass variables to the `build` command or edit the dgxos5.json file
+# At minimum update the ISO location and SHA sum (dgxos5_iso and dgxos5_sha256sum)
+# i.e.
+#    "variables":
+#        {
+#            "dgxos5_iso": "/work/DGXOS-5.0.0-2020-10-01-18-07-44.iso",
+#            "dgxos5_sha256sum": "6e5c7ba2024640b3f23ec8681c15c8ccf8997a23da91c7e9d4eacf73bb564bee"
+#        },
+sudo packer build dgxos5.json
+
+# Optionally, instead of modifying config file:
+sudo packer build -var 'dgxos5_iso=/path/to/dgx_iso' -var 'dgxos5_sha256sum=<dgx_os_iso_sha256_sum>' dgxos5.json
+
+# For more verbosity set `PACKER_LOG=1`, i.e sudo PACKER_LOG=1 build ...
+```
+
+Add image to MAAS:
+
+```sh
+maas $PROFILE boot-resources create name='ubuntu/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
+```
+
+Boot machines in EFI mode
+
+In maas, create and EFI partition in addition to other partitions, i.e:
+```sh
+# NAME    SIZE     FILESYSTEM   MOUNT POINT
+sda-part1 511.7 MB fat32        /boot/efi
+sda-part2 63.9 GB  ext4         /
+```
+
+<!--
+
+## debug stuff
+# to manually test qemu steps for debug purposes:
+mkdir ~/output-qemu
+qemu-img create -f qcow2 output-qemu/packer-qemu 9G
+qemu-img convert -O qcow2 output-qemu/packer-qemu output-qemu/packer-qemu.convert
+/usr/bin/qemu-system-x86_64 -name packer-qemu -boot once=d -drive file=~/output-qemu/packer-qemu,if=virtio,cache=writeback,discard=ignore,format=qcow2 -drive file=/work/DGXOS-5.0.0-2020-10-01-18-07-44.iso,index=0,media=cdrom -serial stdio -m 20
+48M -vnc 0.0.0.0:81 -machine type=pc,accel=tcg -netdev user,id=user.0 -device virtio-net,netdev=user.0
+# connect to VNC on: <machine>:5981 (no password)
+
+# if you're connected to the VNC console, you can ctrl-alt-F2 to get another TTY, log in with the user 'root' and no password
+# ubuntu kernel cmd args/boot params:
+#  https://manpages.ubuntu.com/manpages/focal/en/man7/kernel-command-line.7.html
+#  https://manpages.ubuntu.com/manpages/focal/en/man7/bootparam.7.html
+#  https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.html
+```
 > https://discourse.maas.io/t/creating-a-custom-ubuntu-image/1652
 
 ```sh
@@ -60,64 +137,6 @@ sed -i 's/parse_cmdline$/parse_cmdline "$@"/g' preseed.sh
 bash ./preseed.sh # dgx force-platform=dgx1 force-curtin=${PWD}/dgx1-curtin.yaml
 ```
 
-
-----------------------------------------------
-
-```sh
-# install dependencies (Ubuntu 18.04)
-sudo apt -y install qemu qemu-utils
-
-# install packer
-curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-sudo apt-get update && sudo apt-get install packer
-
-# go to packer template directory for DGX OS 5, i.e
-cd packer-maas/dgxos5
-
-# download DGX OS somewhere (i.e. /work)
-# generate checksum of image
-sha256sum /work/DGXOS-5.0.0-2020-10-01-18-07-44.iso
-# pass variables to `build` command,
-# or edit dgxos5.json file with ISO location and SHA sum (dgxos5_iso and dgxos5_sha256sum)
-# i.e.
-#    "variables":
-#        {
-#            "dgxos5_iso": "/work/DGXOS-5.0.0-2020-10-01-18-07-44.iso",
-#            "dgxos5_sha256sum": "6e5c7ba2024640b3f23ec8681c15c8ccf8997a23da91c7e9d4eacf73bb564bee"
-#        },
-
-# build image
-sudo PACKER_LOG=1 packer build dgxos5.json
-# optionally, instead of modifying config file:
-sudo PACKER_LOG=1 packer build -var 'dgxos5_iso=/path/to/dgx_iso' -var 'dgxos5_sha256sum=<dgx_os_iso_sha256_sum>' dgxos5.json
-
-# Add image to MAAS:
-maas $PROFILE boot-resources create name='ubuntu/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
-
-# Boot machines in EFI mode
-# In maas, create and EFI partition in addition to other partitions, i.e:
-# NAME    SIZE     FILESYSTEM   MOUNT POINT
-sda-part1 511.7 MB fat32        /boot/efi
-sda-part2 63.9 GB  ext4         /
-##
-
-## debug stuff
-# to manually test qemu steps for debug purposes:
-mkdir ~/output-qemu
-qemu-img create -f qcow2 output-qemu/packer-qemu 9G
-qemu-img convert -O qcow2 output-qemu/packer-qemu output-qemu/packer-qemu.convert
-/usr/bin/qemu-system-x86_64 -name packer-qemu -boot once=d -drive file=~/output-qemu/packer-qemu,if=virtio,cache=writeback,discard=ignore,format=qcow2 -drive file=/work/DGXOS-5.0.0-2020-10-01-18-07-44.iso,index=0,media=cdrom -serial stdio -m 20
-48M -vnc 0.0.0.0:81 -machine type=pc,accel=tcg -netdev user,id=user.0 -device virtio-net,netdev=user.0
-# connect to VNC on: <machine>:5981 (no password)
-
-# if you're connected to the VNC console, you can ctrl-alt-F2 to get another TTY, log in with the user 'root' and no password
-# ubuntu kernel cmd args/boot params:
-#  https://manpages.ubuntu.com/manpages/focal/en/man7/kernel-command-line.7.html
-#  https://manpages.ubuntu.com/manpages/focal/en/man7/bootparam.7.html
-#  https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.html
-```
-
 ```sh
 # tmp stuff
 "force-curtin=http://{{ .HTTPIP }}:{{ .HTTPPort }}/curtin.yaml ",
@@ -147,3 +166,4 @@ using preseed, get on console, stop sshd service, run: dhclient ens3
 # between builds, remove artifacts
 sudo rm -rf output-qemu/ dgxos5.tar.gz
 ```
+-->
