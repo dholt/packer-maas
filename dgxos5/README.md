@@ -33,6 +33,7 @@ Build image
 # i.e.
 #    "variables":
 #        {
+#            "platform": "dgx1",
 #            "dgxos5_iso": "/work/DGXOS-5.0.0-2020-10-01-18-07-44.iso",
 #            "dgxos5_sha256sum": "6e5c7ba2024640b3f23ec8681c15c8ccf8997a23da91c7e9d4eacf73bb564bee"
 #        },
@@ -40,6 +41,8 @@ sudo packer build dgxos5.json
 
 # Optionally, instead of modifying config file:
 sudo packer build -var 'dgxos5_iso=/path/to/dgx_iso' -var 'dgxos5_sha256sum=<dgx_os_iso_sha256_sum>' dgxos5.json
+
+# Available platforms: dgx1, dgx2, dgx_a100
 
 # For more verbosity set `PACKER_LOG=1`, i.e sudo PACKER_LOG=1 build ...
 ```
@@ -49,6 +52,7 @@ Come back in about 75 minutes...
 Add image to MAAS:
 
 ```sh
+# Be sure to substitute the proper platform name, i.e. dgx1, dgx2, dgx_a100
 maas $PROFILE boot-resources create name='ubuntu/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
 ```
 
@@ -59,6 +63,17 @@ In maas, create and EFI partition in addition to other partitions, i.e:
 # NAME    SIZE     FILESYSTEM   MOUNT POINT
 sda-part1 511.7 MB fat32        /boot/efi
 sda-part2 63.9 GB  ext4         /
+```
+
+Troubleshooting:
+
+```sh
+# Sometimes nbd devices don't get unmounted between builds with packer
+# so run as root:
+umount /dev/nbd*
+
+# between builds, remove artifacts:
+sudo rm -rf output-qemu/ dgxos5.tar.gz
 ```
 
 TODO Next:
@@ -166,11 +181,5 @@ bash ./preseed.sh # dgx force-platform=dgx1 force-curtin=${PWD}/dgx1-curtin.yaml
             ]
 # foo
 using preseed, get on console, stop sshd service, run: dhclient ens3
-
-# sometimes nbd devices don't get unmounted between builds with packer
-# so run as root: umount /dev/nbd*
-
-# between builds, remove artifacts
-sudo rm -rf output-qemu/ dgxos5.tar.gz
 ```
 -->
