@@ -53,7 +53,7 @@ Add image to MAAS:
 
 ```sh
 # Be sure to substitute the proper platform name, i.e. dgx1, dgx2, dgx_a100
-maas $PROFILE boot-resources create name='ubuntu/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
+maas $PROFILE boot-resources create name='custom/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
 ```
 
 Boot machines in EFI mode
