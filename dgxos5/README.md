@@ -58,7 +58,7 @@ maas $PROFILE boot-resources create name='custom/dgx1-5.0' title='NVIDIA DGX-1 5
 
 Boot machines in EFI mode
 
-In maas, create and EFI partition in addition to other partitions, i.e:
+In maas, create an EFI partition in addition to other partitions, i.e:
 ```sh
 # NAME    SIZE     FILESYSTEM   MOUNT POINT
 sda-part1 511.7 MB fat32        /boot/efi
@@ -78,7 +78,7 @@ sudo rm -rf output-qemu/ dgxos5.tar.gz
 
 TODO Next:
 * kernel parameters in MAAS (w/ tags)
-* add var for force-platform; generate one image per DGX type
+* document generate one image per DGX type
 
 
 <!--
