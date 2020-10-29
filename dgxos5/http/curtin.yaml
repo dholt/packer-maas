@@ -32,9 +32,14 @@ late_commands:
   24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install --no-install-recommends CHANGE_INSTALL_PKGS"]
   25_unattended_upgrades: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get purge -y unattended-upgrades"]
 
+  # (TODO: remove) Rewrite sources list until the release is public
+  30_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse > /etc/apt/sources.list"]
+  31_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb http://us.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse >> /etc/apt/sources.list"]
+  32_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb http://security.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse >> /etc/apt/sources.list"]
+
   # Disable release-upgrade prompt
   40_disable_upgrade: ["curtin", "in-target", "--", "sh", "-c", "sed -i -e 's/^Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades"]
-
+ 
   # Enable SSH last when using Packer
   90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
   91_conf_ssh: ["sed", "-i", "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/", "/etc/ssh/sshd_config"]
