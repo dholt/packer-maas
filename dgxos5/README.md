@@ -59,6 +59,9 @@ sda-part1 511.7 MB fat32        /boot/efi
 sda-part2 63.9 GB  ext4         /
 ```
 
+TODO Next:
+* kernel parameters in MAAS (w/ tags)
+
 <!--
 
 ## debug stuff
