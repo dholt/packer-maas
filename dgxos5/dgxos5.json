@@ -42,7 +42,7 @@
             "inline_shebang": "/bin/bash -e",
             "inline": [
                 "source ../scripts/setup-nbd",
-                "TGZ_NAME='dgxos5.tar.gz'",
+                "OUTPUT='dgxos5.tar.gz'",
                 "source ../scripts/tar-root"
             ]
         }
