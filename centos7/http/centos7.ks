@@ -1,4 +1,4 @@
-url --mirrorlist="http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=os"
+#url --mirrorlist="http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=os"
 poweroff
 firewall --enabled --service=ssh
 firstboot --disable
@@ -12,8 +12,8 @@ timezone UTC --isUtc
 bootloader --location=mbr --driveorder="vda" --timeout=1
 rootpw --plaintext password
 
-repo --name="Updates" --mirrorlist="http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=updates"
-repo --name="Extras" --mirrorlist="http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=extras"
+#repo --name="Updates" --mirrorlist="http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=updates"
+#repo --name="Extras" --mirrorlist="http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=extras"
 
 zerombr
 clearpart --all --initlabel
@@ -34,7 +34,55 @@ done
 
 rm -f /etc/sysconfig/network-scripts/ifcfg-[^lo]*
 
+# Set up repos for 7.6 only
+mv /etc/yum.repos.d /etc/yum_repos_d.backup
+mkdir /etc/yum.repos.d
+chmod 0755 /etc/yum.repos.d
+
+cat <<EOF > /etc/yum.repos.d/CentOS-Vault.repo
+# C7.6.1810
+[C7.6.1810-base]
+name=CentOS-7.6.1810 - Base
+baseurl=http://vault.centos.org/7.6.1810/os/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+
+[C7.6.1810-updates]
+name=CentOS-7.6.1810 - Updates
+baseurl=http://vault.centos.org/7.6.1810/updates/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+
+[C7.6.1810-extras]
+name=CentOS-7.6.1810 - Extras
+baseurl=http://vault.centos.org/7.6.1810/extras/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+
+[C7.6.1810-centosplus]
+name=CentOS-7.6.1810 - CentOSPlus
+baseurl=http://vault.centos.org/7.6.1810/centosplus/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+
+[C7.6.1810-fasttrack]
+name=CentOS-7.6.1810 - Fasttrack
+baseurl=http://vault.centos.org/7.6.1810/fasttrack/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+enabled=0
+EOF
+
+sudo yum-config-manager --enable "CentOS-7.6.1810 - Base"
+sudo yum-config-manager --enable "CentOS-7.6.1810 - Updates"
+sudo yum-config-manager --enable "CentOS-7.6.1810 - Extras"
+
 yum clean all
+
 %end
 
 %packages
