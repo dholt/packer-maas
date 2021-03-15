@@ -1,4 +1,4 @@
-# CentOS 7 Packer Template for MAAS
+# NVIDIA UFM CentOS 7 Packer Template for MAAS
 
 ## Introduction
 The Packer template in this directory creates a CentOS 7 AMD64 image for use with MAAS.
