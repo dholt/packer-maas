@@ -1,9 +1,9 @@
 {
     "variables":
         {
-            "platform": "dgx1",
-            "dgxos5_iso": "/scratch/DGXOS-5.0.0-2020-10-23-18-34-11.iso",
-            "dgxos5_sha256sum": "2eefe51fea356642cbe087db6bac802179db6290db2fc192e81a4ed67b5ee30b"
+            "platform": "dgx_a100",
+            "dgxos5_iso": "/scratch/DGXOS-5.0.0-2020-10-26-11-53-11.iso",
+            "dgxos5_sha256sum": "2d4859bca3d3f6e354f3ae3f23e8e61b2186c6593c569f9495c9c369dbf70084"
         },
     "builders": [
         {
