@@ -3,6 +3,10 @@
 ## Introduction
 The Packer template in this directory creates a CentOS 7 AMD64 image for use with MAAS.
 
+This build has been modified to support NVIDIA UFM software
+
+Download the appropriate ISO from a CentOS mirror, i.e. http://mirrors.oit.uci.edu/centos/7.6.1810/isos/x86_64/CentOS-7-x86_64-Everything-1810.iso
+
 ## Prerequisites (to create the image)
 
 * A machine running Ubuntu 18.04+ with the ability to run KVM virtual machines.
@@ -46,7 +50,7 @@ Installation is non-interactive.
 ## Uploading an image to MAAS
 ```
 $ maas $PROFILE boot-resources create
-name='centos/7-custom' title='CentOS 7 Custom' architecture='amd64/generic' filetype='tgz' content@=centos7.tar.gz
+name='centos/7-custom' title='NVIDIA UFM OS' architecture='amd64/generic' filetype='tgz' content@=centos7.tar.gz
 ```
 
 ## Default Username

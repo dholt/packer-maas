@@ -1,7 +1,7 @@
 Install dependencies (Ubuntu 18.04)
 
 ```sh
-sudo apt -y install qemu qemu-utils
+sudo apt -y install qemu qemu-utils qemu-system-x86
 ```
 
 Install Packer
