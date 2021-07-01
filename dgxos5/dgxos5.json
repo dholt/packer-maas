@@ -2,8 +2,8 @@
     "variables":
         {
             "platform": "dgx_a100",
-            "dgxos5_iso": "/scratch/DGXOS-5.0.0-2020-10-26-11-53-11.iso",
-            "dgxos5_sha256sum": "2d4859bca3d3f6e354f3ae3f23e8e61b2186c6593c569f9495c9c369dbf70084"
+            "dgxos5_iso": "/scratch/DGXOS-5.0.5-2021-05-03-15-52-28.iso",
+            "dgxos5_sha256sum": "dc17e3ed2d5858c1ef8947baad862ffa1b546a88d815f70a91cf5afe52395a90"
         },
     "builders": [
         {
@@ -23,12 +23,12 @@
                 "start-systemd-networkd",
                 "<f10>"
             ],
-            "http_directory": "http",
+            "http_directory": "http/{{ user `platform`}}",
             "boot_wait": "3s",
             "disk_size": "30G",
             "headless": true,
             "vnc_bind_address": "0.0.0.0",
-            "memory": 2048,
+            "memory": 8192,
             "qemuargs": [
                 [ "-serial", "stdio" ],
                 [ "-smbios", "type=0,uefi=on" ],
