@@ -39,6 +39,12 @@ early_commands:
   10_stop_ssh: ["systemctl", "stop", "ssh"]
 
 late_commands:
+  # SSH is configured differently in the cloud images so reconfigure it here to get back
+  # to the default settings
+  # DISABLED: Packer needs specific SSH settings and MAAS will overwrite these settings during deployment
+  #10_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "dpkg-reconfigure openssh-server"]
+  #11_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"]
+
   # Skip writing to PLAT-release file on install
   12_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "touch /tmp/ota_skip_write"]
 
@@ -46,6 +52,12 @@ late_commands:
   23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -y"]
   24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install --no-install-recommends CHANGE_INSTALL_PKGS"]
   25_unattended_upgrades: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get purge -y unattended-upgrades"]
+
+  # Rewrite sources list
+  # DISABLED: MAAS will overwrite these
+  #30_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb http://us.archive.ubuntu.com/ubuntu/ CHANGE_DISTRO main restricted universe multiverse > /etc/apt/sources.list"]
+  #31_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb http://us.archive.ubuntu.com/ubuntu/ CHANGE_DISTRO-updates main restricted universe multiverse >> /etc/apt/sources.list"]
+  #32_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb http://security.ubuntu.com/ubuntu/ CHANGE_DISTRO-security main restricted universe multiverse >> /etc/apt/sources.list"]
 
   # [bug 3099036]: create auth.log now so the fail2ban service can start
   33_touch_auth: ["curtin", "in-target", "--", "sh", "-c", "sudo -u syslog -g adm touch /var/log/auth.log && chmod 644 /var/log/auth.log || true"]
@@ -56,6 +68,53 @@ late_commands:
   # Load ipmi_devintf
   41_ipmi_devintf: ["curtin", "in-target", "--", "sh", "-c", "echo ipmi_devintf >> /etc/modules"]
   42_openibd: ["curtin", "in-target", "--", "sh", "-c", "systemctl enable openibd.service"]
+
+  # This next line must be split across two lines or the sed search replace will not work
+  43_nv_peer_mem: ["curtin", "in-target", "--", "sh", "-c",
+    "/usr/sbin/update-rc.d nv_peer_mem defaults"]
+
+  # DISABLED: no MLNX cards in packer env
+  #44_mlnx_pxe: ["curtin", "in-target", "--", "sh", "-c", "mlnx_pxe_setup.bash"]
+
+  # Enable fabric manager service
+  45_enable_fm: ["curtin", "in-target", "--", "sh", "-c", "systemctl enable nvidia-fabricmanager.service"]
+
+  # Disable SRP
+  46_disable_srp: ["curtin", "in-target", "--", "sh", "-c", "systemctl disable srp_daemon.service"]
+  47_disable_srp_tools: ["curtin", "in-target", "--", "sh", "-c", "systemctl disable srptools.service"]
+  48_disable_rshim: ["curtin", "in-target", "--", "sh", "-c",
+    "if ! lspci | grep -qi bluefield; then \
+       systemctl disable rshim.service; \
+     fi"]
+  49_enable_dcgm: ["curtin", "in-target", "--", "sh", "-c", "systemctl enable dcgm.service"]
+  50_enable_nvpm: ["curtin", "in-target", "--", "sh", "-c", "systemctl enable nvidia-persistenced.service"]
+
+  # RAID
+  # DISABLED: MAAS manages disk layout
+
+  # Disable ipmisol if encrypting or else the cryptpass prompt only appears
+  # on the SOL interface
+  53_unset_ipmisol: ["curtin", "in-target", "--", "sh", "-c",
+    "if CHANGE_IPMISOL; then \
+       if [ -f /etc/default/grub.d/ipmisol.cfg ]; then \
+         sed -i 's/^/#/' /etc/default/grub.d/ipmisol.cfg; \
+         update-grub; \
+       fi \
+     fi"]
+
+  # Copy logs from the install environment into the target
+  90_mkdir_installer_logs: mkdir -p $TARGET_MOUNT_POINT/var/log/installer
+  91_copy_logs: cp -rf /var/log/* $TARGET_MOUNT_POINT/var/log/installer/
+
+  # Replicate boot partition
+  # DISABLED: not applicable in Packer; MAAS handles disk layout
+
+  # Prepare oem-config
+  98_disable_tasksel: ["curtin", "in-target", "--", "sh", "-c",
+    "if [ -f /usr/share/tasksel/descs/ubuntu-tasks.desc ]; then \
+       echo > /usr/share/tasksel/descs/ubuntu-tasks.desc; \
+     fi"]
+  99_oem_config_prepare: ["curtin", "in-target", "--", "sh", "-c", "oem-config-prepare --quiet"]
 
   # Enable SSH last when using Packer
   90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
