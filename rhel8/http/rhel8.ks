@@ -33,6 +33,13 @@ done
 
 rm -f /etc/sysconfig/network-scripts/ifcfg-[^lo]*
 
+# Kickstart copies install boot options. Serial is turned on for logging with
+# Packer which disables console output. Disable it so console output is shown
+# during deployments
+sed -i 's/^GRUB_TERMINAL=.*/GRUB_TERMINAL_OUTPUT="console"/g' /etc/default/grub
+sed -i '/GRUB_SERIAL_COMMAND="serial"/d' /etc/default/grub
+sed -ri 's/(GRUB_CMDLINE_LINUX=".*)\s+console=ttyS0(.*")/\1\2/' /etc/default/grub
+
 dnf clean all
 %end
 
@@ -45,6 +52,9 @@ cloud-init
 python3-oauthlib
 rsync
 tar
+# grub2-efi-x64 ships grub signed for UEFI secure boot. If grub2-efi-x64-modules
+# is installed grub will be generated on deployment and unsigned which breaks
+# UEFI secure boot.
 grub2-efi-x64
 efibootmgr
 shim-x64
