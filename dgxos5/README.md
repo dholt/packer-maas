@@ -85,11 +85,14 @@ sda-part2 63.9 GB  ext4         /
 
 ## Notes:
 
-Deployment: After deploying nodes, they will likely need an apt update/upgrade due to MAAS installing a newer kernel than the one contained
-in the source DGX OS image.
+MAAS installs kernels independently of images when deploying Ubuntu.
+As a result, after deploying nodes, they will likely need an apt update/upgrade
+due to MAAS installing a newer kernel than the one contained in the source DGX OS image.
 
-Updating the images: MAAS installs kernels independently of images when deploying Ubuntu. The DGX images in MAAS should be kept as up-to-date as possible to avoid
-large kernel mismatches. For more information, see: https://maas.io/docs/deb/2.9/ui/creating-a-custom-ubuntu-image
+The DGX images in MAAS should also be kept as up-to-date as possible to avoid
+large kernel mismatches.
+
+For more information, see: https://maas.io/docs/deb/2.9/ui/creating-a-custom-ubuntu-image
 
 ## Troubleshooting:
 
