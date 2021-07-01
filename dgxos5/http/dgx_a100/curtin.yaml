@@ -13,6 +13,18 @@ sources:
     uri: "file:///curtin/ubuntu-20.04-server-cloudimg-amd64-root.tar.xz"
     type: "tgz"
 
+write_files:
+  CHANGE_PLATFORM-release:
+    path: /etc/CHANGE_PLATFORM-release
+    content: |
+      CHANGE_UPPER_PLATFORM_NAME="CHANGE_UPPER_PLATFORM Server"
+      CHANGE_UPPER_PLATFORM_PRETTY_NAME="NVIDIA CHANGE_UPPER_PLATFORM Server"
+      CHANGE_UPPER_PLATFORM_SWBUILD_DATE="CHANGE_TIMESTAMP"
+      CHANGE_UPPER_PLATFORM_SWBUILD_VERSION="CHANGE_VERSION"
+      CHANGE_UPPER_PLATFORM_COMMIT_ID="CHANGE_COMMIT_ID"
+      CHANGE_UPPER_PLATFORM_PLATFORM="CHANGE_DESC_PLATFORM"
+      CHANGE_UPPER_PLATFORM_SERIAL_NUMBER="CHANGE_SERIAL_NUMBER"
+
 reporting:
   mylistener:
     type: journald
@@ -27,13 +39,23 @@ early_commands:
   10_stop_ssh: ["systemctl", "stop", "ssh"]
 
 late_commands:
+  # Skip writing to PLAT-release file on install
+  12_conf_ssh: ["curtin", "in-target", "--", "sh", "-c", "touch /tmp/ota_skip_write"]
+
   22_write_sources: ["curtin", "in-target", "--", "sh", "-c", "echo deb [trusted=yes] http://127.0.0.1/ / > /etc/apt/sources.list"]
   23_apt_update: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -y"]
   24_install_pkgs: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install --no-install-recommends CHANGE_INSTALL_PKGS"]
   25_unattended_upgrades: ["curtin", "in-target", "--", "sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get purge -y unattended-upgrades"]
 
+  # [bug 3099036]: create auth.log now so the fail2ban service can start
+  33_touch_auth: ["curtin", "in-target", "--", "sh", "-c", "sudo -u syslog -g adm touch /var/log/auth.log && chmod 644 /var/log/auth.log || true"]
+
   # Disable release-upgrade prompt
   40_disable_upgrade: ["curtin", "in-target", "--", "sh", "-c", "sed -i -e 's/^Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades"]
+
+  # Load ipmi_devintf
+  41_ipmi_devintf: ["curtin", "in-target", "--", "sh", "-c", "echo ipmi_devintf >> /etc/modules"]
+  42_openibd: ["curtin", "in-target", "--", "sh", "-c", "systemctl enable openibd.service"]
 
   # Enable SSH last when using Packer
   90_conf_ssh: ["sed", "-i", "s/PasswordAuthentication no/PasswordAuthentication yes/", "/etc/ssh/sshd_config"]
