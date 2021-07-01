@@ -89,7 +89,7 @@ Deployment: After deploying nodes, they will likely need an apt update/upgrade d
 in the source DGX OS image.
 
 Updating the images: MAAS installs kernels independently of images when deploying Ubuntu. The DGX images in MAAS should be kept as up-to-date as possible to avoid
-large kernel mismatches.
+large kernel mismatches. For more information, see: https://maas.io/docs/deb/2.9/ui/creating-a-custom-ubuntu-image
 
 ## Troubleshooting:
 
