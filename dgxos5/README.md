@@ -25,6 +25,7 @@ Generate checksum of image
 ```sh
 sha256sum /work/DGXOS-5.0.0-2020-10-01-18-07-44.iso
 ```
+
 Build image
 
 ```sh
@@ -42,17 +43,15 @@ sudo packer build dgxos5.json
 # Optionally, instead of modifying config file:
 sudo packer build -var 'dgxos5_iso=/path/to/dgx_iso' -var 'dgxos5_sha256sum=<dgx_os_iso_sha256_sum>' dgxos5.json
 
-# Available platforms: dgx1, dgx2, dgx_a100
+# Available values for platform variable: dgx1, dgx2, dgx_a100, dgxstation
 
 # For more verbosity set `PACKER_LOG=1`, i.e sudo PACKER_LOG=1 build ...
 ```
 
-Go grab a beer while the image builds...
-
 Add image to MAAS:
 
 ```sh
-# Be sure to substitute the proper platform name, i.e. dgx1, dgx2, dgx_a100
+# Be sure the platform name matches the image built, i.e. dgx1, dgx2, dgx_a100, dgxstation
 maas $PROFILE boot-resources create name='custom/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
 ```
 
