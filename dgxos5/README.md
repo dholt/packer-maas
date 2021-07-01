@@ -1,3 +1,5 @@
+## Procedure
+
 Install dependencies (Ubuntu 18.04)
 
 ```sh
@@ -81,29 +83,45 @@ sda-part1 511.7 MB fat32        /boot/efi
 sda-part2 63.9 GB  ext4         /
 ```
 
-Troubleshooting:
+## Notes:
+
+Deployment: After deploying nodes, they will likely need an apt update/upgrade due to MAAS installing a newer kernel than the one contained
+in the source DGX OS image.
+
+Updating the images: MAAS installs kernels independently of images when deploying Ubuntu. The DGX images in MAAS should be kept as up-to-date as possible to avoid
+large kernel mismatches.
+
+## Troubleshooting:
+
+Sometimes nbd devices don't get unmounted between builds with packer, so run as root:
 
 ```sh
-# Sometimes nbd devices don't get unmounted between builds with packer
-# so run as root:
 umount /dev/nbd*
-
-# between builds, remove artifacts:
-sudo rm -rf output-qemu/ dgxos5.tar.gz
-
-# MAAS image import can fail when using the Ubuntu "snap" MAAS install
-# You may get an error like:
-#   [Errno 2] No such file or directory: '/scratch/packer-maas/dgxos5/dgxos5.tar.gz'
-# Move the tar.gz file under either /home or /media, which the snap install has access to
-# See bug: https://discourse.maas.io/t/maas-boot-resources-create-fails-with-no-such-file-or-directory/3627
 ```
 
-TODO Next:
-* kernel parameters in MAAS (w/ tags)
-* document generate one image per DGX type
+Between builds, remove artifacts:
 
+```sh
+sudo rm -rf output-qemu/ dgxos5.tar.gz
+```
+
+MAAS image import can fail when using the Ubuntu "snap" MAAS install
+
+You may get an error like:
+
+```sh
+  [Errno 2] No such file or directory: '/scratch/packer-maas/dgxos5/dgxos5.tar.gz'
+```
+
+Move the tar.gz file under either /home or /media, which the snap install has access to
+
+See bug: https://discourse.maas.io/t/maas-boot-resources-create-fails-with-no-such-file-or-directory/3627
 
 <!--
+
+TODO:
+* kernel parameters in MAAS (w/ tags)
+* document generate one image per DGX type
 
 ## debug stuff
 # to manually test qemu steps for debug purposes:
