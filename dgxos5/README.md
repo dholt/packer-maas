@@ -48,10 +48,27 @@ sudo packer build -var 'dgxos5_iso=/path/to/dgx_iso' -var 'dgxos5_sha256sum=<dgx
 # For more verbosity set `PACKER_LOG=1`, i.e sudo PACKER_LOG=1 build ...
 ```
 
-Add image to MAAS:
+Log in to MAAS API server using the CLI (for MAAS CLI instructions, see: https://maas.io/docs/deb/2.9/cli/maas-cli):
+
+```sh
+# Create admin user (where $PROFILE is the MAAS user to create)
+sudo maas createadmin --username=$PROFILE --email=$EMAIL_ADDRESS
+
+# Write API key to file
+sudo maas apikey --username=$PROFILE > $API_KEY_FILE
+
+# Log in to MAAS API
+maas login $PROFILE $MAAS_URL - < $API_KEY_FILE
+
+# For example, to log in with the account whose username is ‘admin’ and where the region controller is on the localhost:
+maas login admin http://localhost:5240/MAAS/api/2.0 - < $API_KEY_FILE
+```
+
+Add image to MAAS
 
 ```sh
 # Be sure the platform name matches the image built, i.e. dgx1, dgx2, dgx_a100, dgxstation
+# See troubleshooting section below for issues
 maas $PROFILE boot-resources create name='custom/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
 ```
 
@@ -73,6 +90,12 @@ umount /dev/nbd*
 
 # between builds, remove artifacts:
 sudo rm -rf output-qemu/ dgxos5.tar.gz
+
+# MAAS image import can fail when using the Ubuntu "snap" MAAS install
+# You may get an error like:
+#   [Errno 2] No such file or directory: '/scratch/packer-maas/dgxos5/dgxos5.tar.gz'
+# Move the tar.gz file under either /home or /media, which the snap install has access to
+# See bug: https://discourse.maas.io/t/maas-boot-resources-create-fails-with-no-such-file-or-directory/3627
 ```
 
 TODO Next:
