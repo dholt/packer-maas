@@ -1,4 +1,4 @@
-Install dependencies (Ubuntu 18.04)
+Install dependencies (Ubuntu 18.04 and 20.04)
 
 ```sh
 sudo apt -y install qemu qemu-utils qemu-system-x86
@@ -56,6 +56,35 @@ Add image to MAAS:
 maas $PROFILE boot-resources create name='custom/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
 ```
 
+If using MAAS 3.0 or later, you will need to use the following command, which adds the base_image argument:
+
+```sh
+# Be sure to substitute the proper platform name, i.e. dgx1, dgx2, dgx_a100
+maas $PROFILE boot-resources create name='custom/dgx_a100-5.1' title='NVIDIA DGX-A100 5.1' architecture='amd64/generic' filetype='tgz' base_image=ubuntu/focal content@=dgxos5.tar.gz
+```
+
+Ensure that you are authenticated via the commandline for your MaaS user. If you are not, you may encounter an error like this:
+
+```sh
+argument COMMAND: invalid choice: 'boot-resources' (choose from 'login', 'logout', 'list', 'refresh', 'init', 'config', 'status', 'migrate', 'reconfigure-supervisord', 'apikey', 'configauth', 'createadmin', 'changepassword')
+```
+
+To authenticate:
+
+```sh
+maas login $PROFILE http://<MAAS url>
+#upon executing the above command, the following prompt will present
+API key (leave empty for anonymous access):
+```
+
+At the prompt, enter an API key, which can be acquired with the following command:
+
+```sh
+maas apikey --username $PROFILE
+```
+
+Re-run the boot-resources command once authenticated.
+
 Boot machines in EFI mode
 
 In maas, create an EFI partition in addition to other partitions, i.e:
@@ -74,6 +103,18 @@ umount /dev/nbd*
 
 # between builds, remove artifacts:
 sudo rm -rf output-qemu/ dgxos5.tar.gz
+```
+
+If you see an error like this from the boot-resources command:
+
+```sh
+[Errno 13] Permission denied: './dgxos5.tar.gz'
+```
+
+You can update the ownership of the tar.gz file, like this:
+
+```sh
+sudo chown <target user>:<target group> dgxos5.tar.gz
 ```
 
 TODO Next:
