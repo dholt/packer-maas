@@ -72,6 +72,9 @@ Add image to MAAS
 # Be sure the platform name matches the image built, i.e. dgx1, dgx2, dgx_a100, dgxstation
 # See troubleshooting section below for issues
 maas $PROFILE boot-resources create name='custom/dgx1-5.0' title='NVIDIA DGX-1 5.0' architecture='amd64/generic' filetype='tgz' content@=dgxos5.tar.gz
+
+# As of MAAS 3.1, specify the 'ubuntu' base image, i.e.
+maas $PROFILE boot-resources create name='custom/dgx_a100-5.4' title='NVIDIA DGX A100 5.4' architecture='amd64/generic' filetype='tgz' base_image='ubuntu/focal' content@=dgxos5.tar.gz
 ```
 
 Boot machines in EFI mode
