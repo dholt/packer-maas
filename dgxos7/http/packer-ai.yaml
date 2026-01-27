@@ -1,0 +1,67 @@
+version: 1
+
+locale: en_US.UTF-8
+
+storage:
+  swap:
+    size: 0
+  grub:
+    reorder_uefi: false
+  config:
+  - id: vda
+    type: disk
+    ptable: gpt
+    path: /dev/vda
+    name: osdisk
+    wipe: superblock-recursive
+  - id: vda-part1
+    type: partition
+    device: vda
+    number: 1
+    size: 512MB
+    flag: boot
+    grub_device: true
+  - id: vda-part2
+    type: partition
+    device: vda
+    number: 2
+    size: -1
+  - id: vda-part1-fs1
+    type: format
+    fstype: fat32
+    label: efi
+    volume: vda-part1
+  - id: vda-part2-fs1
+    type: format
+    fstype: ext4
+    label: root
+    volume: vda-part2
+  - id: vda-mount2
+    type: mount
+    path: /
+    device: vda-part2-fs1
+    options: errors=remount-ro
+  - id: boot-mount1
+    type: mount
+    path: /boot/efi
+    device: vda-part1-fs1
+
+identity:
+  realname: Ubuntu User
+  username: ubuntu
+  hostname: dgxos
+  password: "$6$.wrtx7qik5WIZFX3$sycY/k94LlOlX/v/VVVVo6HiBecSx5GM/8j1xR91cLFx.hiEEmsPlFnssKF0a9tEAHIv2YN/QTz1Yq.z8G1ST."
+
+ssh:
+  install-server: true
+  allow-pw: true
+
+late-commands:
+  - sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /target/etc/ssh/sshd_config
+  - sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /target/etc/ssh/sshd_config
+  - curtin in-target -- systemctl enable ssh
+  - curtin in-target -- systemctl set-default multi-user.target
+  - echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/ubuntu
+  - chmod 440 /target/etc/sudoers.d/ubuntu
+  - curtin in-target -- systemctl disable oem-config.target oem-config.service || true
+  - curtin in-target -- systemctl mask oem-config.target oem-config.service || true

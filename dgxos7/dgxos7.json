@@ -1,0 +1,47 @@
+{
+    "variables":
+        {
+            "platform": "dgx_h100",
+            "dgxos7_iso": "{{env `DGXOS7_ISO_PATH`}}",
+            "dgxos7_sha256sum": "{{env `DGXOS7_SHA256SUM`}}"
+        },
+    "builders": [
+        {
+            "type": "qemu",
+            "communicator": "ssh",
+            "ssh_username": "ubuntu",
+            "ssh_password": "ubuntu",
+            "ssh_timeout": "90m",
+            "iso_url": "file:{{user `dgxos7_iso`}}",
+            "iso_checksum": "sha256:{{user `dgxos7_sha256sum`}}",
+            "http_directory": "http",
+            "boot_command": [
+                "<down>e<down><down><end>",
+                " force-ai=http://{{ .HTTPIP }}:{{ .HTTPPort }}/packer-ai.yaml force-platform=kvm force-bootdisk=vda no-mlnx-fw-update ip=dhcp",
+                "<f10>"
+            ],
+            "boot_wait": "3s",
+            "disk_size": "12G",
+            "headless": true,
+            "vnc_bind_address": "0.0.0.0",
+            "vnc_use_password": false,
+            "memory": 4096,
+            "qemuargs": [
+                [ "-serial", "stdio" ],
+                [ "-bios", "/usr/share/ovmf/OVMF.fd" ],
+                [ "-smp", "8"]
+            ]
+        }
+    ],
+    "post-processors": [
+        {
+            "type": "shell-local",
+            "inline_shebang": "/bin/bash -e",
+            "inline": [
+                "source ../scripts/setup-nbd",
+                "OUTPUT='dgxos7.tar.gz'",
+                "source ../scripts/tar-root"
+            ]
+        }
+    ]
+}
