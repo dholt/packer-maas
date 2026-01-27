@@ -1,12 +1,21 @@
+#!/usr/bin/make -f
+
+include ../scripts/check.mk
+
 PACKER ?= packer
+PACKER_LOG ?= 0
+KS_MIRROR ?= https://vault.centos.org
+TIMEOUT ?= 1h
+export PACKER_LOG
 
 .PHONY: all clean
 
 all: centos8.tar.gz
 
-centos8.tar.gz: clean
-	sudo PACKER_LOG=1 ${PACKER} build centos8.json
-	reset
+$(eval $(call check_packages_deps))
+
+centos8.tar.gz: check-deps clean 
+	${PACKER} init centos8.pkr.hcl && ${PACKER} build -var timeout=${TIMEOUT} centos8.pkr.hcl
 
 clean:
-	sudo ${RM} -rf output-qemu centos8.tar.gz
+	${RM} -rf output-centos8 centos8.tar.gz 

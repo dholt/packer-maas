@@ -1,12 +1,21 @@
-PACKER ?= packer
+#!/usr/bin/make -f
 
-.PHONY: all clean
+include ../scripts/check.mk
+
+PACKER ?= packer
+PACKER_LOG ?= 0
+TIMEOUT ?= 1h
+
+export PACKER_LOG
+
+.PHONY: all clean check-deps
 
 all: centos7.tar.gz
 
-centos7.tar.gz: clean
-	sudo PACKER_LOG=1 ${PACKER} build centos7.json
-	reset
+$(eval $(call check_packages_deps))
+
+centos7.tar.gz: clean check-deps
+	${PACKER} init centos7.pkr.hcl && ${PACKER} build -var timeout=${TIMEOUT} centos7.pkr.hcl
 
 clean:
-	sudo ${RM} -rf output-qemu centos7.tar.gz
+	${RM} -rf output-centos7 centos7.tar.gz

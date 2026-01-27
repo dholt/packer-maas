@@ -1,6 +1,6 @@
 __pycache__
 *.orig
-output-qemu
+output-*
 packer_cache
 .ve
 *~
@@ -9,3 +9,15 @@ packer_cache
 *.*.swp
 *.gz
 *.xz
+*.iso
+*.qcow2
+*_VARS.fd
+*_CODE.fd
+ubuntu/packages/*.deb
+ubuntu/packages/*.bin
+ubuntu/packages/*.tar.gz
+.vscode
+*/http/*.ks
+.python-version
+.env
+.envrc

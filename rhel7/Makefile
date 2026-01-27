@@ -1,13 +1,22 @@
+#!/usr/bin/make -f
+
+include ../scripts/check.mk
+
 PACKER ?= packer
+PACKER_LOG ?= 0
 ISO ?= ${RHEL7_ISO_PATH}
+TIMEOUT ?= 1h
+
+export PACKER_LOG
 
 .PHONY: all clean
 
 all: rhel7.tar.gz
 
-rhel7.tar.gz: clean
-	sudo PACKER_LOG=1 ${PACKER} build -var "rhel7_iso_path=${ISO}" rhel7.json
-	reset
+$(eval $(call check_packages_deps))
+
+rhel7.tar.gz: check-deps clean
+	${PACKER} init rhel7.pkr.hcl && ${PACKER} build -var "rhel7_iso_path=${ISO}" -var timeout=${TIMEOUT} rhel7.pkr.hcl
 
 clean:
-	sudo ${RM} -rf output-qemu rhel7.tar.gz
+	${RM} -rf output-rhel7 rhel7.tar.gz 

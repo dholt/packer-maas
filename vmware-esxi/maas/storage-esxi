@@ -4,7 +4,7 @@
 #
 # Author: Lee Trager <lee.trager@canonical.com>
 #
-# Copyright (C) 2019-2021 Canonical
+# Copyright (C) 2019-2024 Canonical
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,6 +22,7 @@
 import os
 import re
 import sys
+import json
 from argparse import ArgumentParser
 from functools import lru_cache
 from subprocess import PIPE, Popen, check_call, check_output
@@ -65,12 +66,61 @@ def is_esxi67():
     return get_esxi_version()[0:2] == (6, 7)
 
 
-def is_esxi7():
-    """Return true if running on VMware ESXi 7.X.Y."""
-    return get_esxi_version()[0] == 7
+def has_esx_os_data():
+    """Return true if running on VMware ESXi 7.X.Y. or newer"""
+    return get_esxi_version()[0] >= 7
 
+def get_nvme_serial_numbers():
+    """Parse all NVME disks on the system to
+       generate a map of Serial Numbers to Adapter Names
+    """
+    nvmes = []
 
-def get_disks():
+    output = check_output(
+        ["esxcli", "nvme", "device", "list"]
+    ).decode()
+    for deviceline in output.splitlines():
+        nvme = None
+        if deviceline.startswith("vmh"):
+           if deviceline.split()[0]:
+              nvme = {}
+              nvmehba = deviceline.split()[0]
+              signature = deviceline.split()[2]
+              # Attach the adapter name to each nvme drive
+              nvme['adapter'] = nvmehba
+              # Convert nvme names to Linux equivalents
+              nvme['devname'] = f"nvme{signature[-1]}n1"
+              hbaout = check_output(
+                  ["esxcli", "nvme", "device", "get", "-A", nvmehba]
+              ).decode()
+              for hbaline in hbaout.splitlines():
+                  if hbaline.strip().startswith("Serial Number:"):
+                        nvme["serial"] = hbaline.strip().split(":")[1].strip()
+
+              if nvme:
+                  nvmes.append(nvme)
+    return nvmes
+
+def extract_serial_from_other_names(line):
+    """
+    Extracts the serial number from a t10.NVMe line using '_' as delimiter.
+    Assumes the serial number is the last alphanumeric field before any trailing numbers or blanks.
+    """
+    if not line.startswith("t10."):
+        return ""
+
+    match = re.search(r"t10\.NVMe____.*?_{2,}(?P<serial>[A-Z0-9]+)", line)
+    if match:
+        return match.group("serial")
+
+    # Fallback for lines with a single underscore separator like Dell drives
+    match = re.search(r"t10\.NVMe____.*?_(?P<serial>[A-Z0-9]+)(?:_+|$)", line)
+    if match:
+        return match.group("serial")
+
+    return False
+
+def get_disks(nvmes):
     """Parse all disks on the system."""
     disks = []
 
@@ -87,29 +137,42 @@ def get_disks():
     disk = None
     other_names = False
 
+    # Regex to read name, model, and serial numbers
+    serial_regex = re.compile(
+        r"^(?P<name>t10\.(?:ATA|NVMe)____)"    # The device names (either ATA or NVMe)
+        r"(?P<model>[A-Z0-9_]+?)__+"           # The model names until multiple underscores
+        r"(?P<serial>[A-Z0-9]+)_*$"            # The serial numbers after multiple underscores
+    )
+
     vendor_model_regex = re.compile(
         r"^Vendor:\s+(?P<vendor>.*)\s*"
         r"Model:\s+(?P<model>.*)\s*"
         r"Revis:\s+(?P<revis>.*)\s*$"
     )
 
+    # Parse the device list
     for line in output.splitlines():
         if not line.startswith(" " * 3):
-            # Each section starts with the device name, all fields are defined
-            # below and start with 3 spaces.
+            # Each section starts with the device name,
+            # all fields are defined below and start with 3 spaces.
             if disk:
                 disks.append(disk)
                 other_names = False
             name = line.strip()
+            m = serial_regex.search(name)
             disk = {
                 "name": name,
                 "other_names": [],
                 "blocksize": disk_block_sizes.get(name, 0),
+                "serial": m.group("serial") if m else extract_serial_from_other_names(name),
+                "model": m.group("model") if m else "",
+                "path": "",
+                "adapter": ""
             }
         elif disk:
+            # Other names is a list of alias.
+            # Entries must start with 6 spaces.
             if other_names and not line.startswith(" " * 6):
-                # Other names is a list which contains the serial. Entries must
-                # start with 6 spaces.
                 other_names = False
             line = line.strip()
             if line.startswith("Size"):
@@ -119,8 +182,6 @@ def get_disks():
                 _, path = line.split(":", 1)
                 disk["path"] = path.strip()
             elif line.startswith("Vendor"):
-                # Vendor isn't actually the vendor, normally its ATA
-                # Stored on the same line is the model which is needed.
                 m = vendor_model_regex.search(line)
                 if m:
                     disk["model"] = m.group("model").strip()
@@ -128,22 +189,54 @@ def get_disks():
                 other_names = True
             elif other_names:
                 disk["other_names"].append(line)
+                on_serial = extract_serial_from_other_names(line)
+                if on_serial and not disk["serial"]:
+                    disk["serial"] = on_serial
+
     if disk:
         disks.append(disk)
+
+    # Map adapter names using serial numbers
+    output = check_output(["esxcli", "storage", "core", "path", "list"]).decode()
+
+    current_adapter = None
+    matching_serial = ""
+
+    for line in output.splitlines():
+        line = line.strip()
+
+        if line.startswith("Adapter:"):
+            _, adapter = line.split(":", 1)
+            current_adapter = adapter.strip()
+
+        elif line.startswith("Device Display Name:"):
+            for disk in disks:
+                if disk['serial'] in line:
+                    matching_serial = disk['serial']
+                    break
+
+        elif line.startswith("Controller:"):
+            for disk in disks:
+                if disk['serial'] in line:
+                    disk['adapter'] = current_adapter
+                    break
+                elif disk['adapter'] == "":
+                        for nvme in nvmes:
+                            if nvme['serial'] in line and disk['serial'] == matching_serial and nvme["adapter"] == current_adapter:
+                                disk['adapter'] = current_adapter
+                                # Override Disk's serial number with the one we get from NVME
+                                # For NVME disks, serial numbers reported in Linux and ESXi may not match
+                                disk['serial'] = nvme['serial']
+                                break
+
     return disks
 
-
-def get_disk(disks, model, serial):
+def get_disk(disks, nvmes, serial):
     """Return the disk matching the model and serial from the list of disk."""
     for disk in disks:
-        # udev will sometimes replace a space in the model name with an
-        # underscore.
-        if disk["model"] == model or disk["model"].replace(" ", "_") == model:
-            for other_name in disk["other_names"]:
-                # VMware doesn't provide the exact serial number. It provides
-                # a list of other names, one of which contains the serial
-                if serial in other_name:
-                    return disk
+        if serial == disk["serial"]:
+            return disk
+
     return None
 
 
@@ -153,7 +246,19 @@ def parse_config(config):
     partitions = {}
     vmfs_datastores = {}
 
-    detected_disks = get_disks()
+    nvmes = get_nvme_serial_numbers()
+    detected_disks = get_disks(nvmes)
+
+    # Log config data
+    with open("/var/log/storage-esxi-config.log", "w") as log_file:
+        json.dump(config, log_file, indent=2)
+
+    # Log detected disks data
+    with open("/var/log/storage-esxi-disks.log", "w") as log_file:
+        json.dump(detected_disks, log_file, indent=2)
+
+    with open("/var/log/storage-esxi-nvmes.log", "w") as log_file:
+        json.dump(nvmes, log_file, indent=2)
 
     for i in config:
         if i.get("type") == "disk":
@@ -161,7 +266,12 @@ def parse_config(config):
                 i["partitioned"] = True
             model = i["model"].replace(" ", "_")
             serial = i["serial"].replace(" ", "_")
-            disk = get_disk(detected_disks, model, serial)
+
+            # Log parsed config data
+            with open("/var/log/storage-esxi-parse-config.log", "a") as log_file:
+                json.dump(i, log_file, indent=2)
+
+            disk = get_disk(detected_disks, nvmes, serial)
             if disk:
                 i["path"] = disk["path"]
                 i["blocksize"] = disk["blocksize"]
@@ -172,6 +282,10 @@ def parse_config(config):
             partitions[i["id"]] = i
         elif i.get("type") == "vmfs6":
             vmfs_datastores[i["id"]] = i
+
+    # Log parsed disks data
+    with open("/var/log/storage-esxi-disks-parsed.log", "w") as log_file:
+        json.dump(disks, log_file, indent=2)
 
     return disks, partitions, vmfs_datastores
 
@@ -190,7 +304,7 @@ def process_disk_wipes(disks):
             # customized.
             if is_esxi67() and os.path.exists("%s:3" % disk["path"]):
                 datastore_partition = "3"
-            elif is_esxi7() and os.path.exists("%s:8" % disk["path"]):
+            elif has_esx_os_data() and os.path.exists("%s:8" % disk["path"]):
                 datastore_partition = "8"
             else:
                 datastore_partition = None
@@ -238,34 +352,13 @@ def get_starting_sector(path):
     return starting_sector + 1
 
 
-def get_ending_sector(blocksize, starting_sector, size):
-    """Return the ending sector from the size."""
-    if isinstance(size, int):
-        return size
-    elif isinstance(size, float):
-        if int(size) != size:
-            raise ValueError(
-                "'%s': resulted in non-integer (%s)" % ((size, int(size)))
-            )
-    elif not isinstance(size, str):
-        raise TypeError("cannot convert type %s ('%s')." % (type(size), size))
+def get_ending_sector(path):
+    """Return the ending sector from the disk path."""
+    ending_sector = 0
+    part_info = check_output(["partedUtil", "get", path]).decode().splitlines()[0]
+    ending_sector = int(part_info.split()[3]) - int(part_info.split()[0])
 
-    size = size.upper()
-    # Any size can end with B
-    if size.endswith("B"):
-        size = size[:-1]
-
-    mpliers = {"B": 1, "K": 2 ** 10, "M": 2 ** 20, "G": 2 ** 30, "T": 2 ** 40}
-
-    mplier = "B"
-    for m in mpliers:
-        if size.endswith(m):
-            size = size[0 : -len(m)]
-            mplier = m
-            break
-
-    return int(starting_sector + float(size) * mpliers[mplier] / blocksize)
-
+    return ending_sector
 
 def partition_disks(disks, partitions):
     """Partition all disks."""
@@ -278,9 +371,14 @@ def partition_disks(disks, partitions):
         # It needs to be recreated. On VMware ESXi 7.0 the offical installer
         # defines 5 partitions and skips partitions 2-4. Partition 8 is the
         # datastore which can be extended.
+        #
+        # When vmfs6 storage layout is selected, MAAS nonetheless sets
+        # partition 3 for datastores on grub_device.
+        #
+        # On non-grub-device disks, the datastore remains partition 1.
         if disk.get("grub_device") and (
             (is_esxi67() and part["number"] != 3 and part["number"] <= 9)
-            or (is_esxi7() and part["number"] <= 7)
+            or (has_esx_os_data() and part["number"] != 3)
         ):
             continue
         elif not disk.get("partitioned"):
@@ -291,22 +389,31 @@ def partition_disks(disks, partitions):
             check_call(["partedUtil", "mklabel", disk["path"], disk["ptable"]])
             disk["partitioned"] = True
 
-        info("Creating partition %s on %s" % (part["number"], disk["path"]))
-        starting_sector = get_starting_sector(disk["path"])
-        ending_sector = get_ending_sector(
-            disk["blocksize"], starting_sector, part["size"]
-        )
-        check_call(
-            [
-                "partedUtil",
-                "add",
-                disk["path"],
-                disk["ptable"],
-                # partedUtil expects this as one argument
-                "%s %s %s AA31E02A400F11DB9590000C2911D1B8 0"
-                % (part["number"], starting_sector, ending_sector),
-            ]
-        )
+        if not os.path.exists("%s:%s" % (disk["path"], part["number"])):
+            starting_sector = get_starting_sector(disk["path"])
+            ending_sector = get_ending_sector(disk["path"])
+
+            info(
+                 "Creating partition %s on %s (Start: %s End: %s)"
+                 % (part["number"], disk["path"], starting_sector, ending_sector)
+                )
+
+            check_call(
+                [
+                    "partedUtil",
+                    "add",
+                    disk["path"],
+                    disk["ptable"],
+                    # partedUtil expects this as one argument
+                    "%s %s %s AA31E02A400F11DB9590000C2911D1B8 0"
+                    % (part["number"], starting_sector, ending_sector),
+                ]
+            )
+        else:
+            info(
+                 "Skip creating partition %s on %s"
+                 % (part["number"], disk["path"])
+            )
 
 
 def get_partition_dev(disks, partitions, id):
@@ -322,7 +429,7 @@ def mkvmfs(disks, partitions, vmfs_datastores):
         head_partition = get_partition_dev(
             disks, partitions, vmfs_datastore["devices"][0]
         )
-        # Both VMware ESXi 6.7 and 7.0 use VMFS6.
+        # Both VMware ESXi uses VMFS6.
         info(
             "Creating VMFS6 datastore %s using %s as the head partition"
             % (vmfs_datastore["name"], head_partition)
@@ -446,6 +553,8 @@ def main():
     disks, partitions, vmfs_datastores = parse_config(config["config"])
 
     if len(vmfs_datastores) == 0:
+        # In the lack of storage information, only one disk will be
+        # used to create the default datastore1
         warn("No storage information given, extending datastore1.")
         extend_default(disks)
     else:
