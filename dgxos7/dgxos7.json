@@ -33,6 +33,24 @@
             ]
         }
     ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline": [
+                "echo 'Removing cloud-init.disabled...'",
+                "sudo rm -fv /etc/cloud/cloud-init.disabled || true",
+                "echo 'Removing 99-installer.cfg...'",
+                "sudo rm -fv /etc/cloud/cloud.cfg.d/99-installer.cfg || true",
+                "echo 'Removing 99-installer clean script...'",
+                "sudo rm -fv /etc/cloud/clean.d/99-installer || true",
+                "echo 'Listing remaining files...'",
+                "ls -la /etc/cloud/cloud.cfg.d/ || true",
+                "ls -la /etc/cloud/clean.d/ || true",
+                "echo 'Syncing filesystem...'",
+                "sync"
+            ]
+        }
+    ],
     "post-processors": [
         {
             "type": "shell-local",
