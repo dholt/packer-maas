@@ -2,6 +2,14 @@ version: 1
 
 locale: en_US.UTF-8
 
+network:
+  version: 2
+  ethernets:
+    all-en:
+      match:
+        name: en*
+      dhcp4: true
+
 storage:
   swap:
     size: 0
@@ -66,18 +74,3 @@ late-commands:
   - curtin in-target -- systemctl disable oem-config.target oem-config.service || true
   - curtin in-target -- systemctl mask oem-config.target oem-config.service || true
   - rm -f /target/etc/cloud/cloud-init.disabled
-  - |
-   cat > /target/etc/cloud/cloud.cfg.d/99-disable-network-config.cfg <<EOF
-   network:
-     config: disabled
-   EOF
-  - |
-   cat > /target/etc/netplan/00-dhcp.yaml <<EOF
-   network:
-     version: 2
-     ethernets:
-       id0:
-         match:
-           driver: virtio*
-         dhcp4: true
-   EOF
