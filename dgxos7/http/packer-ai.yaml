@@ -65,3 +65,19 @@ late-commands:
   - chmod 440 /target/etc/sudoers.d/ubuntu
   - curtin in-target -- systemctl disable oem-config.target oem-config.service || true
   - curtin in-target -- systemctl mask oem-config.target oem-config.service || true
+  - rm -f /target/etc/cloud/cloud-init.disabled
+  - |
+   cat > /target/etc/cloud/cloud.cfg.d/99-disable-network-config.cfg <<EOF
+   network:
+     config: disabled
+   EOF
+  - |
+   cat > /target/etc/netplan/00-dhcp.yaml <<EOF
+   network:
+     version: 2
+     ethernets:
+       id0:
+         match:
+           driver: virtio*
+         dhcp4: true
+   EOF
