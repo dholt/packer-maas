@@ -74,3 +74,4 @@ late-commands:
   - curtin in-target -- systemctl disable oem-config.target oem-config.service || true
   - curtin in-target -- systemctl mask oem-config.target oem-config.service || true
   - rm -f /target/etc/cloud/cloud-init.disabled
+  - rm -f /target/etc/cloud/cloud.cfg.d/99-installer.cfg
