@@ -2,6 +2,15 @@ version: 1
 
 locale: en_US.UTF-8
 
+apt:
+  preserve_sources_list: false
+  conf: |
+    Dpkg::Options {
+      "--force-confdef";
+      "--force-confold";
+    };
+  disable_suites: [release, updates, backports, security, proposed]
+
 network:
   version: 2
   ethernets:
@@ -65,12 +74,51 @@ ssh:
   allow-pw: true
 
 late-commands:
+  # Mount ISO for package installation
+  - mkdir -p /target/tmp/cdrom
+  - mount --bind /cdrom /target/tmp/cdrom || true
+  - |
+    cat << EOF > /target/etc/apt/sources.list
+    deb [check-date=no] file:///tmp/cdrom/ noble main restricted
+    EOF
+
+  # Install DGX packages (CHANGE_INSTALL_PKGS substituted by preseed.sh)
+  - touch /target/tmp/ota_skip_write
+  - curtin in-target -- apt-get update -y
+  - curtin in-target -- /bin/bash -c "DEBIAN_FRONTEND=noninteractive RUN_FW_UPDATER=no apt-get install -y --no-install-recommends CHANGE_INSTALL_PKGS"
+  - curtin in-target -- apt-get purge -y unattended-upgrades || true
+
+  # Restore apt sources for post-install
+  - echo "# Ubuntu sources have moved to /etc/apt/sources.list.d/ubuntu.sources" > /target/etc/apt/sources.list
+  - |
+    cat << EOF > /target/etc/apt/sources.list.d/ubuntu.sources
+    Types: deb
+    URIs: http://us.archive.ubuntu.com/ubuntu/
+    Suites: noble noble-updates noble-backports
+    Components: main restricted universe multiverse
+    Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+    Types: deb
+    URIs: http://security.ubuntu.com/ubuntu/
+    Suites: noble-security
+    Components: main restricted universe multiverse
+    Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+    EOF
+
+  # SSH configuration for packer
   - sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /target/etc/ssh/sshd_config
   - sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /target/etc/ssh/sshd_config
   - curtin in-target -- systemctl enable ssh
   - curtin in-target -- systemctl set-default multi-user.target
   - echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/ubuntu
   - chmod 440 /target/etc/sudoers.d/ubuntu
+
+  # Disable oem-config
   - curtin in-target -- systemctl disable oem-config.target oem-config.service || true
   - curtin in-target -- systemctl mask oem-config.target oem-config.service || true
+
+  # Enable NVIDIA services
+  - curtin in-target -- systemctl enable nvidia-persistenced.service || true
+
+  # Remove cloud-init.disabled (packer provisioner also does this as backup)
   - rm -f /target/etc/cloud/cloud-init.disabled
