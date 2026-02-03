@@ -113,7 +113,7 @@ This template uses the DGX OS 7 installer's native autoinstall mechanism:
 - `force-platform=dgx_h100` - Platform type (can be changed via `platform` variable)
 - `force-bootdisk=vda` - Specifies boot disk
 - `nooemconfig` - Disables OEM config packages that require interactive EULA acceptance
-- `no-mlnx-fw-update` - Skips Mellanox firmware updates (not needed in VM)
+- `no-mlnx-fw-update` - Skips Mellanox firmware updates
 - `ip=dhcp` - Enables networking for HTTP config fetch
 
 ## Customization
