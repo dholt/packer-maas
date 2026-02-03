@@ -43,7 +43,7 @@ DGX OS 7 ISOs are available to customers with an NVIDIA Enterprise Support accou
 export DGXOS7_ISO_PATH=/path/to/DGXOS-7.x.x.iso
 export DGXOS7_SHA256SUM=$(sha256sum $DGXOS7_ISO_PATH | cut -d' ' -f1)
 
-# Build (uses kvm platform for VM builds)
+# Build (defaults to dgx_h100 platform)
 sudo make
 ```
 
@@ -59,7 +59,7 @@ sudo PACKER_LOG=1 packer build dgxos7.json
 ### Build Output
 
 After a successful build (~60 minutes), you will have:
-- **dgxos7.tar.gz** - Deployable MAAS image (~1.3GB)
+- **dgxos7.tar.gz** - Deployable MAAS image (~2.5GB)
 
 ## Uploading to MAAS
 
@@ -93,10 +93,10 @@ maas $PROFILE machine deploy <system_id> \
 
 This template uses the DGX OS 7 installer's native autoinstall mechanism:
 
-1. **Boot**: GRUB is edited to add `force-ai=http://...` parameter pointing to Packer's HTTP server
-2. **Install**: The DGX installer's `preseed.sh` downloads our custom autoinstall config (`http/packer-ai.yaml`)
-3. **Configure**: Our config sets up partitions, creates an `ubuntu` user, enables SSH
-4. **Complete**: After install, Packer connects via SSH, shuts down the VM, and creates the MAAS tarball
+1. **Boot**: GRUB is edited to add kernel parameters (`force-ai`, `force-platform`, `nooemconfig`, etc.)
+2. **Download**: The DGX installer's `preseed.sh` downloads our custom autoinstall config (`http/packer-ai.yaml`)
+3. **Install**: Our config sets up partitions, installs NVIDIA packages (with EULA bypassed), creates an `ubuntu` user, enables SSH
+4. **Complete**: After install, Packer connects via SSH, removes cloud-init.disabled, shuts down the VM, and creates the MAAS tarball
 
 ### Key Boot Parameters
 
