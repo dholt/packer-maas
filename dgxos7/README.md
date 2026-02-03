@@ -22,9 +22,18 @@ This directory contains a Packer template for building NVIDIA DGX OS 7 images de
 
 - **Packer** 1.7.0 or later
 - **QEMU/KVM** with UEFI support (OVMF)
-- **Linux build environment** (Ubuntu 22.04+ recommended)
-- **sudo access** (required for NBD device operations)
+- **Linux build environment** (Debian/Ubuntu recommended)
 - **MAAS** 3.0 or later (for deployment)
+
+### Build Dependencies
+
+Install the required packages for image creation:
+
+```bash
+# Debian/Ubuntu
+apt-get install -y qemu-system-x86 qemu-utils ovmf packer \
+    nbdkit libnbd-bin fuse2fs
+```
 
 ### DGX OS 7 ISO
 
@@ -96,7 +105,7 @@ This template uses the DGX OS 7 installer's native autoinstall mechanism:
 1. **Boot**: GRUB is edited to add kernel parameters (`force-ai`, `force-platform`, `nooemconfig`, etc.)
 2. **Download**: The DGX installer's `preseed.sh` downloads our custom autoinstall config (`http/packer-ai.yaml`)
 3. **Install**: Our config sets up partitions, installs NVIDIA packages (with EULA bypassed), creates an `ubuntu` user, enables SSH
-4. **Complete**: After install, Packer connects via SSH, removes cloud-init.disabled, shuts down the VM, and creates the MAAS tarball
+4. **Complete**: After install, Packer connects via SSH, installs curtin hooks, resets cloud-init state for MAAS, and creates the tarball
 
 ### Key Boot Parameters
 
@@ -141,7 +150,7 @@ If you see YAML errors in the installer:
 
 ### Wrong Partition in Tarball
 
-The `scripts/tar-root` script must mount partition 2 (root) not partition 1 (EFI) for GPT layouts. This was fixed to auto-detect.
+For GPT layouts, root is on partition 2 (partition 1 is EFI). The `ROOT_PARTITION=2` variable in the post-processor ensures the correct partition is extracted.
 
 ## Technical Notes
 

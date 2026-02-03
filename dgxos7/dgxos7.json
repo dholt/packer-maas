@@ -35,20 +35,33 @@
     ],
     "provisioners": [
         {
+            "type": "file",
+            "sources": ["scripts/curtin-hooks", "scripts/setup-bootloader"],
+            "destination": "/tmp/"
+        },
+        {
             "type": "shell",
             "inline": [
-                "echo 'Removing cloud-init disable files...'",
+                "echo 'Installing curtin hooks for MAAS deployment...'",
+                "sudo mkdir -p /curtin",
+                "sudo mv /tmp/curtin-hooks /curtin/",
+                "sudo mv /tmp/setup-bootloader /curtin/",
+                "sudo chmod 750 /curtin/curtin-hooks /curtin/setup-bootloader",
+                "echo 'Resetting cloud-init state for MAAS deployment...'",
+                "sudo cloud-init clean --logs || true",
+                "echo 'Removing cloud-init disable files (after clean)...'",
                 "sudo rm -fv /etc/cloud/cloud-init.disabled || true",
                 "sudo rm -fv /etc/cloud/cloud.cfg.d/99-installer.cfg || true",
-                "sudo rm -fv /etc/cloud/clean.d/99-installer || true",
-                "echo 'Removing installer-specific network config...'",
                 "sudo rm -fv /etc/cloud/cloud.cfg.d/90-installer-network.cfg || true",
-                "echo 'Resetting cloud-init state for MAAS deployment...'",
-                "sudo cloud-init clean --logs",
+                "sudo rm -fv /etc/cloud/clean.d/99-installer || true",
                 "echo 'Removing fstab to let MAAS configure storage...'",
                 "sudo rm -fv /etc/fstab || true",
-                "echo 'Listing remaining cloud-init config files...'",
-                "ls -la /etc/cloud/cloud.cfg.d/ || true",
+                "echo 'Verifying cloud-init is enabled...'",
+                "ls -la /etc/cloud/ | grep -v '^d' || true",
+                "echo 'Creating first-boot marker for dgx-release service...'",
+                "sudo touch /var/tmp/first-boot-dgx-release",
+                "echo 'Listing curtin hooks...'",
+                "ls -la /curtin/",
                 "echo 'Syncing filesystem...'",
                 "sync"
             ]
@@ -59,9 +72,10 @@
             "type": "shell-local",
             "inline_shebang": "/bin/bash -e",
             "inline": [
-                "source ../scripts/setup-nbd",
+                "ROOT_PARTITION=2",
                 "OUTPUT='dgxos7.tar.gz'",
-                "source ../scripts/tar-root"
+                "source ../scripts/fuse-nbd",
+                "source ../scripts/fuse-tar-root"
             ]
         }
     ]
