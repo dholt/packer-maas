@@ -37,15 +37,18 @@
         {
             "type": "shell",
             "inline": [
-                "echo 'Removing cloud-init.disabled...'",
+                "echo 'Removing cloud-init disable files...'",
                 "sudo rm -fv /etc/cloud/cloud-init.disabled || true",
-                "echo 'Removing 99-installer.cfg...'",
                 "sudo rm -fv /etc/cloud/cloud.cfg.d/99-installer.cfg || true",
-                "echo 'Removing 99-installer clean script...'",
                 "sudo rm -fv /etc/cloud/clean.d/99-installer || true",
-                "echo 'Listing remaining files...'",
+                "echo 'Removing installer-specific network config...'",
+                "sudo rm -fv /etc/cloud/cloud.cfg.d/90-installer-network.cfg || true",
+                "echo 'Resetting cloud-init state for MAAS deployment...'",
+                "sudo cloud-init clean --logs",
+                "echo 'Removing fstab to let MAAS configure storage...'",
+                "sudo rm -fv /etc/fstab || true",
+                "echo 'Listing remaining cloud-init config files...'",
                 "ls -la /etc/cloud/cloud.cfg.d/ || true",
-                "ls -la /etc/cloud/clean.d/ || true",
                 "echo 'Syncing filesystem...'",
                 "sync"
             ]
