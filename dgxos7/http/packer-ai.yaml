@@ -73,6 +73,19 @@ ssh:
   install-server: true
   allow-pw: true
 
+early-commands:
+  # APPROACH: Replace nv-eula.sh with no-op in live environment before it runs
+  # The live system uses overlayfs, so we can modify "read-only" squashfs files
+  - |
+    if [ -f /usr/share/nvidia/nv-eula.sh ]; then
+      echo '#!/bin/sh' > /usr/share/nvidia/nv-eula.sh
+      echo 'exit 0' >> /usr/share/nvidia/nv-eula.sh
+      chmod +x /usr/share/nvidia/nv-eula.sh
+      echo "Replaced nv-eula.sh with no-op"
+    fi
+  # Backup: pre-seed debconf (in case replacement fails)
+  - echo 'nvidia nvidia/accepted-eula boolean true' | debconf-set-selections || true
+
 late-commands:
   # Mount ISO for package installation
   - mkdir -p /target/tmp/cdrom
@@ -82,10 +95,24 @@ late-commands:
     deb [check-date=no] file:///tmp/cdrom/ noble main restricted
     EOF
 
-  # Install DGX packages (CHANGE_INSTALL_PKGS substituted by preseed.sh)
+  # Pre-seed NVIDIA EULA in target before package installation
+  - curtin in-target -- /bin/bash -c "echo 'nvidia nvidia/accepted-eula boolean true' | debconf-set-selections"
+
+  # Divert nv-eula.sh and replace with no-op BEFORE any package installation
+  - curtin in-target -- mkdir -p /usr/share/nvidia
+  - curtin in-target -- dpkg-divert --add --rename --divert /usr/share/nvidia/nv-eula.sh.real /usr/share/nvidia/nv-eula.sh || true
+  - |
+    cat << 'EOFSCRIPT' > /target/usr/share/nvidia/nv-eula.sh
+    #!/bin/sh
+    # No-op replacement - EULA auto-accepted for automated install
+    exit 0
+    EOFSCRIPT
+  - chmod +x /target/usr/share/nvidia/nv-eula.sh
+
+  # Install DGX packages - hardcoded list excluding nvidia-oem-config-* to avoid EULA prompt
   - touch /target/tmp/ota_skip_write
   - curtin in-target -- apt-get update -y
-  - curtin in-target -- /bin/bash -c "DEBIAN_FRONTEND=noninteractive RUN_FW_UPDATER=no apt-get install -y --no-install-recommends CHANGE_INSTALL_PKGS"
+  - curtin in-target -- /bin/bash -c "DEBIAN_FRONTEND=noninteractive RUN_FW_UPDATER=no apt-get install -y --no-install-recommends dgx-server-grub cuda-nvml-dev-12-8 nvidia-driver-570-open libnvidia-nscq-570 nvidia-fabricmanager-570 nvidia-persistenced nvidia-peermem-loader nvdebug nvfwupd nvsm nvidia-acs-disable datacenter-gpu-manager-4-cuda12 nvidia-mig-manager nvidia-system-core nvidia-system-utils nvidia-system-extra nvidia-grub-params nvidia-fs nvidia-fs-dkms nvidia-conf-cachefilesd nvidia-ipmisol nvidia-pci-bridge-power nvidia-modprobe dpkg-dev nvidia-fs-loader"
   - curtin in-target -- apt-get purge -y unattended-upgrades || true
 
   # Restore apt sources for post-install

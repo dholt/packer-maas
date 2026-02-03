@@ -101,8 +101,9 @@ This template uses the DGX OS 7 installer's native autoinstall mechanism:
 ### Key Boot Parameters
 
 - `force-ai=http://...` - Points to custom autoinstall config
-- `force-platform=kvm` - Uses VM-optimized configuration
+- `force-platform=dgx_h100` - Platform type (can be changed via `platform` variable)
 - `force-bootdisk=vda` - Specifies boot disk
+- `nooemconfig` - Disables OEM config packages that require interactive EULA acceptance
 - `no-mlnx-fw-update` - Skips Mellanox firmware updates (not needed in VM)
 - `ip=dhcp` - Enables networking for HTTP config fetch
 

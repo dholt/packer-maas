@@ -17,7 +17,7 @@
             "http_directory": "http",
             "boot_command": [
                 "<down>e<down><down><end>",
-                " force-ai=http://{{ .HTTPIP }}:{{ .HTTPPort }}/packer-ai.yaml force-platform={{user `platform`}} force-bootdisk=vda no-mlnx-fw-update ip=dhcp",
+                " force-ai=http://10.0.2.2:{{ .HTTPPort }}/packer-ai.yaml force-platform={{user `platform`}} force-bootdisk=vda nooemconfig no-mlnx-fw-update ip=dhcp",
                 "<f10>"
             ],
             "boot_wait": "3s",
