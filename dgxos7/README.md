@@ -74,7 +74,14 @@ After a successful build (~60 minutes), you will have:
 
 ## Uploading to MAAS
 
+**Note:** The MAAS CLI requires the image file to be in your current working directory. Copy the image to your home directory and run the command from there:
+
 ```bash
+# Copy image to MAAS server home directory
+scp dgxos7.tar.gz maas@<maas-server>:~/
+
+# SSH to MAAS server and upload
+ssh maas@<maas-server>
 PROFILE=admin
 
 maas $PROFILE boot-resources create \
@@ -84,6 +91,18 @@ maas $PROFILE boot-resources create \
     filetype='tgz' \
     base_image='ubuntu/noble' \
     content@=dgxos7.tar.gz
+```
+
+To replace an existing image, first delete the old one:
+
+```bash
+# Find the image ID
+maas $PROFILE boot-resources read | jq '.[] | select(.name | contains("dgxos7")) | {id, name}'
+
+# Delete the old image
+maas $PROFILE boot-resource delete <id>
+
+# Upload the new image (as above)
 ```
 
 ## Deployment
