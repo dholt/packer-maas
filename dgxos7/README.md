@@ -1,5 +1,7 @@
 # DGX OS 7 Packer Template for MAAS
 
+> **EULA Notice:** By building and deploying images with this template, you accept the NVIDIA DGX Software License Agreement. The build process automatically accepts the EULA on your behalf.
+
 ## Overview
 
 This directory contains a Packer template for building NVIDIA DGX OS 7 images deployable via MAAS (Metal as a Service). DGX OS 7 is based on Ubuntu 24.04 LTS with kernel 6.8 and includes NVIDIA-optimized configurations for the latest DGX hardware platforms.

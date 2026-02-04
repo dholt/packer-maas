@@ -109,10 +109,10 @@ late-commands:
     EOFSCRIPT
   - chmod +x /target/usr/share/nvidia/nv-eula.sh
 
-  # Install DGX packages - hardcoded list excluding nvidia-oem-config-* to avoid EULA prompt
+  # Install DGX packages (CHANGE_INSTALL_PKGS substituted by preseed.sh with platform-specific packages)
   - touch /target/tmp/ota_skip_write
   - curtin in-target -- apt-get update -y
-  - curtin in-target -- /bin/bash -c "DEBIAN_FRONTEND=noninteractive RUN_FW_UPDATER=no apt-get install -y --no-install-recommends dgx-server-grub cuda-nvml-dev-12-8 nvidia-driver-570-open libnvidia-nscq-570 nvidia-fabricmanager-570 nvidia-persistenced nvidia-peermem-loader nvdebug nvfwupd nvsm nvidia-acs-disable datacenter-gpu-manager-4-cuda12 nvidia-mig-manager nvidia-system-core nvidia-system-utils nvidia-system-extra nvidia-grub-params nvidia-fs nvidia-fs-dkms nvidia-conf-cachefilesd nvidia-ipmisol nvidia-pci-bridge-power nvidia-modprobe dpkg-dev nvidia-fs-loader"
+  - curtin in-target -- /bin/bash -c "DEBIAN_FRONTEND=noninteractive RUN_FW_UPDATER=no apt-get install -y --no-install-recommends CHANGE_INSTALL_PKGS || apt-get install -f -y"
   - curtin in-target -- apt-get purge -y unattended-upgrades || true
 
   # Restore apt sources for post-install
